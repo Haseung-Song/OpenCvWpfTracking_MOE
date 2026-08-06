@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace OpenCvWpfTracking
 {
@@ -335,11 +336,33 @@ namespace OpenCvWpfTracking
             ConsoleLogHelper.PrintLine();
         }
 
+        /// <summary>
+        /// 현재 분리 영상 창의 카메라 종류에 맞춰
+        /// 영상, 연결 상태, 제목 및 상태 표시 색상을 설정한다.
+        ///
+        /// EO 카메라:
+        /// - EOCameraImage 영상 Binding
+        /// - EoStatusText 연결 상태 Binding
+        /// - 파란색 상태 표시
+        ///
+        /// IR 카메라:
+        /// - IRCameraImage 영상 Binding
+        /// - IrStatusText 연결 상태 Binding
+        /// - 보라색 상태 표시
+        ///
+        /// R / T 단축키로 분리 창의 카메라가 변경될 때도
+        /// 이 함수를 다시 호출하여 모든 Binding과 표시 정보를 갱신한다.
+        ///
+        /// 메인 화면과 동일한 상태 색상:
+        /// - EO: #7FB3E6
+        /// - IR: #C4B5FD
+        /// </summary>
         private void ConfigureCameraBinding()
         {
             string imagePropertyName;
             string statusPropertyName;
             string cameraTitle;
+            Color statusColor;
 
             if (_cameraType ==
                 VideoPopoutCameraType.Eo)
@@ -352,6 +375,12 @@ namespace OpenCvWpfTracking
 
                 cameraTitle =
                     "EO CAMERA / SHORTCUT CONTROL";
+
+                statusColor =
+                    Color.FromRgb(
+                        0x7F,
+                        0xB3,
+                        0xE6);
 
                 Title =
                     "[MOE] EO CAMERA VIEW";
@@ -366,6 +395,12 @@ namespace OpenCvWpfTracking
 
                 cameraTitle =
                     "IR CAMERA / SHORTCUT CONTROL";
+
+                statusColor =
+                    Color.FromRgb(
+                        0xC4,
+                        0xB5,
+                        0xFD);
 
                 Title =
                     "[MOE] IR CAMERA VIEW";
@@ -386,6 +421,10 @@ namespace OpenCvWpfTracking
                 {
                     Mode = BindingMode.OneWay
                 });
+
+            CameraStatusText.Foreground =
+                new SolidColorBrush(
+                    statusColor);
 
             CameraTitleText.Text =
                 cameraTitle;

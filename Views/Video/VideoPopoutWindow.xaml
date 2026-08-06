@@ -150,11 +150,11 @@
         </Border>
 
         <!-- 현재 카메라 연결 및 영상 상태 -->
+        <!-- 현재 카메라 연결 및 영상 상태 -->
         <TextBlock x:Name="CameraStatusText"
                    Margin="0,0,14,10"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Bottom"
-                   Foreground="#7FB3E6"
                    FontSize="16"
                    FontWeight="Bold"
                    IsHitTestVisible="False"/>
