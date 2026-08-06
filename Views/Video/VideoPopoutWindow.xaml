@@ -1,0 +1,164 @@
+﻿<Window x:Class="OpenCvWpfTracking.VideoPopoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="VIDEO VIEW"
+        Width="1280"
+        Height="720"
+        MinWidth="800"
+        MinHeight="450"
+        Background="Black"
+        WindowStartupLocation="CenterOwner"
+        Focusable="True"
+        Loaded="Window_Loaded"
+        Deactivated="Window_Deactivated"
+        Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewKeyUp="Window_PreviewKeyUp">
+
+    <Grid Background="Black"
+          ClipToBounds="True">
+
+        <!--
+            MainViewModel의 기존 BitmapSource를 그대로 Binding한다.
+
+            별도 RTSP Decoder나 Capture Loop를 생성하지 않으므로
+            메인 화면과 분리 창이 동일 프레임을 공유한다.
+        -->
+        <Image x:Name="CameraImage"
+               Stretch="Uniform"
+               RenderOptions.BitmapScalingMode="LowQuality"
+               SnapsToDevicePixels="True"
+               UseLayoutRounding="True"/>
+
+        <!-- 중앙 십자선 -->
+        <Grid Width="72"
+              Height="72"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              IsHitTestVisible="False">
+
+            <!-- 검정 외곽선 -->
+            <Canvas Width="72"
+                    Height="72">
+
+                <Line X1="36"
+                      Y1="2"
+                      X2="36"
+                      Y2="70"
+                      Stroke="#CC000000"
+                      StrokeThickness="4"/>
+
+                <Line X1="2"
+                      Y1="36"
+                      X2="70"
+                      Y2="36"
+                      Stroke="#CC000000"
+                      StrokeThickness="4"/>
+
+            </Canvas>
+
+            <!-- 메인 화면과 동일한 사용자 선택 색상의 십자선 본선 -->
+            <Canvas Width="72"
+                    Height="72">
+
+                <Line X1="36"
+                      Y1="2"
+                      X2="36"
+                      Y2="70"
+                      Stroke="{Binding CrosshairBrush}"
+                      StrokeThickness="2"/>
+
+                <Line X1="2"
+                      Y1="36"
+                      X2="70"
+                      Y2="36"
+                      Stroke="{Binding CrosshairBrush}"
+                      StrokeThickness="2"/>
+
+            </Canvas>
+
+        </Grid>
+
+        <!-- 카메라 및 단축키 안내 -->
+        <Border Margin="14"
+                Padding="10,7"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="#B21D232A"
+                BorderBrush="#7FB3E6"
+                BorderThickness="1"
+                CornerRadius="3">
+
+            <StackPanel>
+
+                <TextBlock x:Name="CameraTitleText"
+                           Foreground="#7FB3E6"
+                           FontSize="18"
+                           FontWeight="Bold"/>
+
+                <!-- EO / IR 주화면 선택 단축키 -->
+                <TextBlock Margin="0,4,0,0"
+                           Text="R : EO MAIN    T : IR MAIN"
+                           Foreground="#FFD166"
+                           FontSize="13"
+                           FontWeight="Bold"/>
+
+                <!-- 메인 화면과 동일한 Pan / Tilt 방향키 -->
+                <TextBlock Margin="0,4,0,0"
+                           Text="ARROW KEYS : PAN / TILT CONTROL"
+                           Foreground="#9FE870"
+                           FontSize="13"
+                           FontWeight="Bold"/>
+
+                <!-- 현재 선택된 영상의 렌즈 제어 단축키 -->
+                <TextBlock Margin="0,4,0,0"
+                           Text="W : ZOOM IN    S : ZOOM OUT    A : FOCUS NEAR    D : FOCUS FAR"
+                           Foreground="White"
+                           FontSize="13"/>
+
+                <TextBlock Margin="0,2,0,0"
+                           Text="키를 떼면 동작이 정지합니다."
+                           Foreground="#D0D0D0"
+                           FontSize="12"/>
+
+                <!-- AUTO SCAN 중 분리 창 단축키 잠금 안내 -->
+                <TextBlock Margin="0,7,0,0"
+                           Text="AUTO SCAN 동작 중이므로 키 입력이 비활성화됩니다."
+                           Foreground="#FFFF6B6B"
+                           FontSize="13"
+                           FontWeight="Bold">
+
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility"
+                                    Value="Collapsed"/>
+
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPresetScanControlLocked}"
+                                             Value="True">
+                                    <Setter Property="Visibility"
+                                            Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+
+                </TextBlock>
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- 현재 카메라 연결 및 영상 상태 -->
+        <TextBlock x:Name="CameraStatusText"
+                   Margin="0,0,14,10"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Foreground="#7FB3E6"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   IsHitTestVisible="False"/>
+
+    </Grid>
+
+</Window>
