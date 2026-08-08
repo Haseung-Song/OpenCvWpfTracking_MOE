@@ -163,6 +163,11 @@ namespace OpenCvWpfTracking.ViewModels.Main
         public ICommand MoveTiltAbsoluteCommand { get; }
 
         /// <summary>
+        /// [PAN] / [TILT] Absolute 위치 이동 정지 [Command]
+        /// </summary>
+        public ICommand StopAbsoluteMoveCommand { get; }
+
+        /// <summary>
         /// EO / IR Zoom Position 이동 [Command]
         /// </summary>
         public ICommand SetZoomPositionCommand { get; }
@@ -260,6 +265,11 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// [AI Detector Agent] 수동 연결 [Command]
         /// </summary>
         public ICommand ConnectAiAgentCommand { get; }
+
+        /// <summary>
+        /// [AI Detector Agent] 수동 연결 해제 [Command]
+        /// </summary>
+        public ICommand DisconnectAiAgentCommand { get; }
 
         /// <summary>
         /// [AI Detector Agent] [RTSP] 주소 설정 적용 [Command]
@@ -1775,6 +1785,27 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 if (_aiSettingStatusText != value)
                 {
                     _aiSettingStatusText = value;
+                    OnPropertyChanged();
+                }
+
+            }
+
+        }
+
+        /// <summary>
+        /// [AI Detector Agent] 연결 상태 화면 표시 문자열
+        ///
+        /// AI 연결 확인 전에는 OFF,
+        /// 연결 확인 완료 후에는 ON으로 표시한다.
+        /// </summary>
+        public string AiPowerStatusText
+        {
+            get => _aiPowerStatusText;
+            private set
+            {
+                if (_aiPowerStatusText != value)
+                {
+                    _aiPowerStatusText = value;
                     OnPropertyChanged();
                 }
 

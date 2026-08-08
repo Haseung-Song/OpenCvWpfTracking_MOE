@@ -135,14 +135,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 ResetCancellationToken();
 
-                /// <summary>
-                /// [AI] [Detector Agent] 수동 연결 테스트용
-                ///
-                /// 현재는 [Auto Reconnect] 구조 사용으로 인해
-                /// 따로 호출하지는 않는다.
-                /// </summary>
-                //_ = ConnectAiDetectorAsync();
-
                 _isDeviceConnectionRequested =
                     true;
 

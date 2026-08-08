@@ -382,6 +382,16 @@ namespace OpenCvWpfTracking
                         0xB3,
                         0xE6);
 
+                // EO 영상은 16:9 비율의 넓은 분리 창을 사용한다.
+                Width =
+                    1280;
+
+                Height =
+                    720;
+
+                CameraImage.Stretch =
+                    Stretch.UniformToFill;
+
                 Title =
                     "[MOE] EO CAMERA VIEW";
             }
@@ -401,6 +411,20 @@ namespace OpenCvWpfTracking
                         0xC4,
                         0xB5,
                         0xFD);
+
+                //
+                // IR 영상은 EO보다 좁은 센서 종횡비를 사용한다.
+                // 분리 창의 가로 크기를 줄이고 원본 비율을 유지하여
+                // 화면이 좌우로 늘어나 보이지 않도록 한다.
+                //
+                Width =
+                    960;
+
+                Height =
+                    800;
+
+                CameraImage.Stretch =
+                    Stretch.Uniform;
 
                 Title =
                     "[MOE] IR CAMERA VIEW";

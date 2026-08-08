@@ -21,36 +21,88 @@ namespace OpenCvWpfTracking.ViewModels.Main
         #region [AI Detector Connect]
 
         /// <summary>
-        /// [AI Detector Agent] 연결 시작
+        /// [AI CONNECT] 버튼 기준 수동 연결 및 초기 설정 적용
         ///
-        /// 기본 [TCP] Port : [5055]
-        ///
-        /// [TCP] 연결 성공 시,
-        /// [AiDetectorClientService] 내부 [ReceiveLoop]에서
-        /// [AI Detector Agent] 응답 [Packet]을 지속적으로 수신한다.
-        ///
-        /// 수신된 완성 [Packet]은
-        /// [PacketReceived] 이벤트를 통해 [MainViewModel]로 전달되고,
-        /// [AiDetectorPacketParser]에서 [CMD 55] 탐지데이터를 파싱한다.
+        /// 프로그램 시작 또는 장비 연결 시에는 AI Agent에 자동 연결하지 않는다.
+        /// 사용자가 [AI CONNECT]를 누른 경우에만 UI의 IP / Port로 1회 연결하고,
+        /// 연결 성공 뒤 RTSP / 모델 / Mapping 정보를 순서대로 적용 및 조회한다.
         /// </summary>
-        private async Task ConnectAiDetectorAsync()
+        private async Task ConnectAiAgentFromSettingAsync()
         {
+            AiPowerStatusText = "OFF";
+            AiSettingStatusText = "[AI] Connecting...";
+
+            try
+            {
+                /*
+                 * 과거 Auto Reconnect가 실행된 상태가 남아 있더라도
+                 * 버튼 기반 수동 연결 정책과 충돌하지 않도록 먼저 종료한다.
+                 */
+                _aiDetectorClientService.StopAutoReconnect();
+                _aiDetectorClientService.Disconnect();
+
+                bool connected =
+                    await _aiDetectorClientService.ConnectAsync(
+                        AiControlAgentIp,
+                        AiAgentPort);
+
+                if (!connected)
+                {
+                    AiSettingStatusText = "[AI] Connect Failed";
+                    return;
+                }
+
+                AiPowerStatusText = "ON";
+                AiSettingStatusText = "[AI] Connected";
+
+                if (!await RequestAiDetectorRtspAddressSetAsync())
+                {
+                    AiSettingStatusText = "[AI] RTSP Apply Failed";
+                    return;
+                }
+
+                await Task.Delay(300);
+
+                if (!await RequestAiDetectorInfoAsync() ||
+                    !await RequestAiDetectorRtspAddressAsync() ||
+                    !await RequestAiDetectorOnnxListAsync() ||
+                    !await RequestAiDetectorMappingSetAsync() ||
+                    !await RequestAiDetectorMappingAsync())
+                {
+                    AiSettingStatusText = "[AI] Initial Setting Incomplete";
+                    return;
+                }
+
+                AiSettingStatusText = "[AI] Connect / Setting Complete";
+            }
+            catch (Exception ex)
+            {
+                AiPowerStatusText = "OFF";
+                AiSettingStatusText = "[AI] Connect / Setting Incomplete";
+
+                ConsoleLogHelper.Error(
+                    "AI DETECTOR",
+                    "Connect / setting exception / " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// [AI DISCONNECT] 버튼 기준 수동 연결 해제
+        ///
+        /// 자동 재연결 요청을 함께 중단하여 사용자가 다시
+        /// [AI CONNECT]를 누르기 전에는 AI Agent에 재접속하지 않는다.
+        /// </summary>
+        private void DisconnectAiAgent()
+        {
+            _aiDetectorClientService.StopAutoReconnect();
+            _aiDetectorClientService.Disconnect();
+
+            AiPowerStatusText = "OFF";
+            AiSettingStatusText = "[AI] Disconnected";
+
             ConsoleLogHelper.Command(
                 "AI DETECTOR",
-                $"Connect requested / TARGET={AiControlAgentIp}:{AiAgentPort}");
-
-            Console.WriteLine("[AI DETECTOR] Connect Start");
-
-            bool result =
-                await _aiDetectorClientService.ConnectAsync(
-                    "192.168.20.160",
-                    5055);
-
-            Console.WriteLine(
-                "[AI DETECTOR CONNECT RESULT] "
-                + result);
-
-            ConsoleLogHelper.PrintLine();
+                "Manual disconnect completed");
         }
 
         #endregion

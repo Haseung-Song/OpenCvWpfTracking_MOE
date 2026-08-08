@@ -4,19 +4,40 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenCvWpfTracking"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
-        Title="[MOE] EO/IR TEST VIEWER"
+        Title="[MOE] EO/IR VIDEO MONITORING &amp; PTZF CONTROL VIEWER"
         Width="1920"
         Height="1080"
         MinWidth="960"
         MinHeight="540"
         Background="#2C313A"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        BorderThickness="0"
+        BorderBrush="Transparent"
         WindowStartupLocation="CenterScreen"
         Focusable="True"
         Loaded="Window_Loaded"
         Deactivated="Window_Deactivated"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewKeyUp="Window_PreviewKeyUp">
+
+    <!--
+        [DEMO UI] 사용자 정의 Window Frame
+
+        기본 Title Bar를 숨긴 상태에서도 창 가장자리와 네 모서리에서
+        마우스로 크기를 조절할 수 있도록 WindowChrome을 적용한다.
+        외곽 모서리와 내부 Title Bar의 반경을 동일하게 사용하여
+        서로 다른 배경색이 모서리 밖으로 돌출되어 보이지 않게 한다.
+    -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="8"
+                            CornerRadius="8"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
         <!-- [EO / IR] 영상 중앙 십자선 공통 Template
@@ -449,6 +470,78 @@
 
         </Style>
 
+        <!-- [통신 설정] CONTROL / RTSP 및 AI DETECTOR 하위 탭 전용 스타일
+
+            상위 탭의 둥근 모서리 Template을 중첩해 사용하지 않고,
+            직선형 Header와 하나의 Content Border만 사용한다.
+            중첩 Border의 색상 단차와 양쪽 모서리 돌출을 방지한다. -->
+        <Style x:Key="CommunicationSubTabItemStyle"
+               TargetType="TabItem">
+            <Setter Property="Foreground" Value="#D0D7DE"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="HeaderBorder"
+                                Height="33"
+                                Background="#4F5860"
+                                BorderBrush="#95A5B0"
+                                BorderThickness="1,1,1,0"
+                                CornerRadius="5,5,0,0"
+                                Padding="8">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="#5F666D"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="#3B5F70"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CommunicationSubTabControlStyle"
+               TargetType="TabControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid ClipToBounds="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <UniformGrid Grid.Row="0"
+                                         Rows="1"
+                                         Columns="2"
+                                         IsItemsHost="True"
+                                         HorizontalAlignment="Stretch"/>
+                            <Border Grid.Row="1"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="#95A5B0"
+                                    BorderThickness="1"
+                                    CornerRadius="0,0,5,5"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter ContentSource="SelectedContent"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- [통신 설정] 입력 TextBox 스타일 -->
         <Style x:Key="CommunicationTextBoxStyle"
                 TargetType="TextBox">
@@ -481,6 +574,54 @@
                     Value="Center"/>
         </Style>
 
+        <!--
+            [DEMO UI] 회사 로고 공용 패널
+
+            IR 영상 하단과 메인 화면 하단에서 동일한 배경 및 로고를
+            사용하도록 하나의 Template으로 공통 관리한다.
+        -->
+        <ControlTemplate x:Key="DemoCompanyLogoPanelTemplate"
+                         TargetType="Control">
+            <Border Background="#15191E"
+                    BorderBrush="#4F6773"
+                    BorderThickness="2"
+                    CornerRadius="4"
+                    ClipToBounds="True">
+                <Grid>
+                    <Image Source="/Images/Demo/BackPanel.png"
+                           Stretch="Fill"
+                           Opacity="0.72"/>
+
+                    <Border Margin="12"
+                            Background="Black"
+                            CornerRadius="3">
+                        <Image Source="/Images/Demo/GlobalSystemsLogo.png"
+                               Stretch="Uniform"
+                               Margin="24"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </ControlTemplate>
+
+        <!-- [DEMO UI] 글로벌시스템스 현재 위치 오프라인 지도
+
+            외부 API 또는 인터넷 연결 상태와 관계없이 데모 현장에서
+            항상 동일한 회사 위치 지도를 표시하도록 로컬 Resource를 사용한다. -->
+        <ControlTemplate x:Key="DemoCompanyMapPanelTemplate"
+                         TargetType="Control">
+            <Border Background="#15191E"
+                    BorderBrush="#4F6773"
+                    BorderThickness="2"
+                    CornerRadius="5"
+                    ClipToBounds="True">
+                <Grid Background="#202830">
+                    <Image Source="/Images/Demo/GlobalSystemsTacticalMap.png"
+                           Stretch="UniformToFill"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Grid>
+            </Border>
+        </ControlTemplate>
+
     </Window.Resources>
 
     <!--
@@ -491,7 +632,66 @@
         균일 확대한다. 우측/하단 내부 ScrollViewer는 그대로 동작하므로
         탭과 메뉴가 화면 밖으로 잘리지 않는다.
     -->
-    <Viewbox Stretch="Uniform"
+    <Border Background="#2C313A"
+            BorderBrush="Transparent"
+            BorderThickness="0"
+            CornerRadius="8"
+            ClipToBounds="True">
+    <Grid Background="#2C313A">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="34"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!--
+            [DEMO UI] 사용자 정의 Window Title Bar
+
+            기본 Window Frame을 사용하지 않는 데모 화면에서
+            창 이동 / 최소화 / 최대화 / 종료 기능을 제공한다.
+        -->
+        <Border Grid.Row="0"
+                Background="#46515A"
+                BorderBrush="#71808A"
+                BorderThickness="0,0,0,1"
+                CornerRadius="7,7,0,0"
+                MouseLeftButtonDown="WindowTitleBar_MouseLeftButtonDown">
+            <Grid>
+                <TextBlock Text="[MOE] EO/IR VIDEO MONITORING &amp; PTZF CONTROL VIEWER"
+                           Margin="12,0,0,0"
+                           Foreground="#D8E3EA"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Content="─"
+                            Width="48"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="White"
+                            FontSize="15"
+                            Click="MinimizeWindowButton_Click"/>
+                    <Button Content="□"
+                            Width="48"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="White"
+                            FontSize="15"
+                            Click="MaximizeRestoreWindowButton_Click"/>
+                    <Button Content="×"
+                            Width="48"
+                            Background="#8E3030"
+                            BorderThickness="0"
+                            Foreground="White"
+                            FontSize="18"
+                            Click="CloseWindowButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    <Viewbox Grid.Row="1"
+             Stretch="Uniform"
              StretchDirection="Both"
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch">
@@ -506,13 +706,31 @@
                 <RowDefinition Height="0.8*"/>
             </Grid.RowDefinitions>
 
-            <!-- 상단 영역 -->
-            <Grid Grid.Row="0">
+            <!--
+                [DEMO UI] 영상 / 회사 로고 / 장비 제어 통합 영역
+
+                기존 UI와 동일하게 EO / IR 영상을 상단 전체 높이에 배치하고,
+                하단에는 하나의 회사 로고 패널만 표시한다.
+
+                영상과 AI Overlay는 UniformToFill을 함께 사용한다.
+                원본 종횡비는 유지하면서 영역 밖 가장자리만 잘라
+                EO / IR 영상 영역에 검은 여백이 남지 않도록 구성한다.
+            -->
+            <Grid Grid.RowSpan="2">
+                <Grid.RowDefinitions>
+                    <!-- 기존 UI 비율을 유지하는 EO / IR 영상 영역 -->
+                    <RowDefinition Height="650"/>
+
+                    <!-- 기존 하단 AI 패널 높이에 맞춘 단일 회사 로고 영역 -->
+                    <RowDefinition Height="410"/>
+                </Grid.RowDefinitions>
+
                 <Grid.ColumnDefinitions>
                     <!-- [EO] 영상 영역 -->
-                    <ColumnDefinition Width="1.8*"/>
+                    <ColumnDefinition Width="1000"/>
 
-                    <ColumnDefinition Width="1.2*"/>
+                    <!-- [IR] 영상 및 보조 로고 영역 -->
+                    <ColumnDefinition Width="440"/>
 
                     <!-- 장비 제어 패널 -->
                     <ColumnDefinition Width="450"/>
@@ -520,6 +738,7 @@
 
                 <!-- [좌측] 큰 영상 -->
                 <Border x:Name="EoVideoBorder"
+                        Grid.Row="0"
                         Grid.Column="0"
                         Margin="5,5,10,0"
                         Background="Black"
@@ -531,13 +750,13 @@
 
                         <!-- [EO] 영상 -->
                         <Image Source="{Binding EOCameraImage}"
-                                Stretch="Uniform"
+                                Stretch="UniformToFill"
                                 RenderOptions.BitmapScalingMode="LowQuality"
                                 SnapsToDevicePixels="True"
                                 UseLayoutRounding="True"/>
 
                         <!-- [AI] [Bounding Box] [Overlay] -->
-                        <Viewbox Stretch="Uniform"
+                        <Viewbox Stretch="UniformToFill"
                                 Visibility="Visible"
                                 IsHitTestVisible="False">
 
@@ -637,7 +856,10 @@
                     Container 자체의 Grid.Column을 변경하므로
                     영상 관련 Overlay도 동일한 위치로 함께 이동한다. -->
                 <Grid x:Name="IrVideoContainer"
+                        Grid.Row="0"
                         Grid.Column="1"
+                        Height="365"
+                        VerticalAlignment="Top"
                         Margin="0,5,10,0">
 
                     <Border x:Name="IrVideoBorder"
@@ -651,11 +873,11 @@
 
                             <!-- [IR] 영상 -->
                             <Image Source="{Binding IRCameraImage}"
-                                    Stretch="Uniform"/>
+                                   Stretch="UniformToFill"/>
 
                             <!-- [AI] [Bounding Box] [Overlay] -->
-                            <Viewbox Stretch="Uniform"
-                                    IsHitTestVisible="False">
+                            <Viewbox Stretch="UniformToFill"
+                                     IsHitTestVisible="False">
 
                                 <ItemsControl ItemsSource="{Binding IrDetectionBoxes}"
                                         Width="{Binding IrVideoWidth}"
@@ -751,8 +973,190 @@
 
                 </Grid>
 
+                <!-- [DEMO UI] IR 하단 글로벌시스템스 위치 지도 -->
+                <Control x:Name="CompanyMapPanel"
+                         Grid.Row="0"
+                         Grid.Column="1"
+                         Height="275"
+                         VerticalAlignment="Bottom"
+                         Margin="0,5,10,0"
+                         Template="{StaticResource DemoCompanyMapPanelTemplate}"/>
+
+                <!--
+                    [이전 배치] IR 하단 고정 상태 영역
+
+                    통신 설정 / 운용 제어 탭에서 상태 카드를 분리하여
+                    IR 영상 아래의 여유 공간에 항상 표시한다.
+                    제어 탭의 세로 공간을 확보하고 스크롤 발생을 줄인다.
+                -->
+                <Grid Grid.Row="0"
+                      Grid.Column="1"
+                      Visibility="Collapsed"
+                      Height="275"
+                      VerticalAlignment="Bottom"
+                      Margin="0,5,10,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="185"/>
+                        <RowDefinition Height="85"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 환경부 장비 현재 PTZF 상태 -->
+                    <Border Grid.Row="0"
+                            Background="#4E555C"
+                            BorderBrush="#95A5B0"
+                            BorderThickness="1.5"
+                            CornerRadius="4"
+                            Padding="8"
+                            Margin="0,0,0,5">
+                        <StackPanel>
+                            <TextBlock Text="CURRENT STATUS"
+                                       Foreground="White"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,6"/>
+                            <Button Content="ENVIRONMENT"
+                                    Height="25"
+                                    Margin="2,0,2,6"
+                                    IsEnabled="{Binding IsOperationCommandEnabled}"
+                                    Command="{Binding ShowEnvironmentStatusCommand}"/>
+                            <TextBlock Text="{Binding CurrentStatusEquipmentText}"
+                                       Foreground="#8FD3FF"
+                                       FontSize="10.5"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,5"/>
+                            <Border Background="#343A40"
+                                    BorderBrush="#6C757D"
+                                    BorderThickness="1"
+                                    Padding="6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding CurrentPanText, StringFormat=Pan : {0}}" Foreground="White"/>
+                                        <TextBlock Text="{Binding CurrentTiltText, StringFormat=Tilt : {0}}" Foreground="White"/>
+                                        <TextBlock Text="{Binding CurrentEoZoomText, StringFormat=EO Zoom : {0}}" Foreground="White"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding CurrentEoFocusText, StringFormat=EO Focus : {0}}" Foreground="White"/>
+                                        <TextBlock Text="{Binding CurrentIrZoomText, StringFormat=IR Zoom : {0}}" Foreground="White"/>
+                                        <TextBlock Text="{Binding CurrentIrFocusText, StringFormat=IR Focus : {0}}" Foreground="White"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 전체 연결 상태 -->
+                    <Border Grid.Row="1"
+                            Background="#5F666D"
+                            BorderBrush="#95A5B0"
+                            BorderThickness="1.5"
+                            CornerRadius="4"
+                            Padding="7">
+                        <StackPanel>
+                            <TextBlock Text="CONNECTION STATUS"
+                                       Foreground="White"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,5"/>
+                            <Border Background="#40464D"
+                                    BorderBrush="#76818B"
+                                    BorderThickness="1"
+                                    Padding="5">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="0.22*"/>
+                                        <ColumnDefinition Width="0.78*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="POWER"
+                                               Foreground="#D0D7DE"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1"
+                                               FontSize="10.5"
+                                               FontWeight="Bold"
+                                               HorizontalAlignment="Center"
+                                               TextAlignment="Center">
+                                        <Run Text="CONTROL:" Foreground="#4FD1C5"/><Run Text="{Binding CurrentControlPowerText, Mode=OneWay}" Foreground="#9FE870"/><Run Text=" / " Foreground="#D0D7DE"/><Run Text="EO:" Foreground="#7DD3FC"/><Run Text="{Binding CurrentEoPowerText, Mode=OneWay}" Foreground="#9FE870"/><Run Text=" / " Foreground="#D0D7DE"/><Run Text="IR:" Foreground="#C4B5FD"/><Run Text="{Binding CurrentIrPowerText, Mode=OneWay}" Foreground="#9FE870"/><Run Text=" / " Foreground="#D0D7DE"/><Run Text="AI:" Foreground="#FFD166"/><Run Text="{Binding AiPowerStatusText, Mode=OneWay}" Foreground="#9FE870"/>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!--
+                    [DEMO UI] 하단 정적 파노라마 영역
+
+                    실시간 Stitching 전 단계의 임시 운용 기능으로,
+                    기본 옥상 파노라마 또는 사용자가 선택한 JPG / PNG 이미지를
+                    한 장 표시한다. 추후 Pan 값 기반 현재 시점 표시를 추가할 수
+                    있도록 영상과 조작 버튼을 독립된 Grid로 구성한다.
+                -->
+                <Border Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Margin="5,5,10,5"
+                        Background="#10161C"
+                        BorderBrush="#4F6773"
+                        BorderThickness="2"
+                        CornerRadius="5"
+                        ClipToBounds="True">
+                    <Grid>
+                        <Image x:Name="PanoramaImage"
+                               Source="/Images/Demo/DefaultRooftopPanorama.jpg"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                        <Border VerticalAlignment="Top"
+                                HorizontalAlignment="Stretch"
+                                Height="46"
+                                Background="#B0151D24">
+                            <Grid Margin="12,6">
+                                <TextBlock x:Name="PanoramaFileNameText"
+                                           Text="ROOFTOP PANORAMA / DEFAULT IMAGE"
+                                           Foreground="#AFC8D8"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"/>
+
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Right">
+                                    <Button Content="새 파노라마 만들기"
+                                            Width="145"
+                                            Margin="0,0,8,0"
+                                            Foreground="White"
+                                            Background="#315D77"
+                                            BorderBrush="#7FB3E6"
+                                            Click="NewPanoramaButton_Click"/>
+                                    <Button Content="이미지 불러오기"
+                                            Width="125"
+                                            Foreground="White"
+                                            Background="#315D77"
+                                            BorderBrush="#7FB3E6"
+                                            Click="LoadPanoramaImageButton_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock x:Name="PanoramaEmptyText"
+                                   Text="파노라마 이미지가 없습니다."
+                                   Visibility="Collapsed"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="#7FB3E6"
+                                   FontSize="16"
+                                   FontWeight="Bold"/>
+                    </Grid>
+                </Border>
+
                 <!-- 우측 통신 설정 / 운용 제어 패널 -->
-                <Border Grid.Column="2"
+                <Border Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Grid.Column="2"
                         Margin="0,5,8,0"
                         Background="#646A71"
                         BorderBrush="#8B949E"
@@ -766,13 +1170,26 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <!-- 우측 장비 제어 패널 제목 -->
-                        <TextBlock Grid.Row="0"
-                                Text="장비 제어"
-                                Foreground="White"
-                                FontSize="15"
-                                FontWeight="Bold"
-                                Margin="0,0,0,8"/>
+                        <!--
+                            [DEMO UI] TORUSS 브랜드 및 장비 제어 패널 제목
+
+                            데모 화면에서 제품 브랜드를 우선 확인할 수 있도록
+                            속도 설정과 운용 제어 UI 상단에 고정 표시한다.
+                        -->
+                        <StackPanel Grid.Row="0"
+                                    Margin="0,0,0,8">
+                            <Image Source="/Images/Demo/TorussLogo.png"
+                                   Height="58"
+                                   Margin="0,0,0,10"
+                                   HorizontalAlignment="Stretch"
+                                   Stretch="Uniform"/>
+
+                            <TextBlock Text="장비 제어"
+                                       Foreground="White"
+                                       FontSize="15"
+                                       FontWeight="Bold"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
 
                         <!--
                             [PAN / TILT] Pelco-D 공통 속도 제어
@@ -846,31 +1263,56 @@
                             <!-- Control Agent 통신 연결 설정 -->
                             <TabItem Header="통신 설정"
                                     IsEnabled="{Binding IsOperationCommandEnabled}">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                        HorizontalScrollBarVisibility="Disabled">
-                                    <StackPanel Margin="5">
+                                <Grid Margin="5">
+                                    <Grid.RowDefinitions>
+                                        <!-- 통신 설정 하위 탭 영역 -->
+                                        <RowDefinition Height="*"/>
+
+                                        <!-- 항상 표시하는 전체 연결 상태 영역 -->
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
                                         <!-- Control Agent 및 EO / IR RTSP 통합 설정 카드 -->
-                                        <Border Background="#5F666D"
+                                        <Border Grid.Row="0"
+                                                Background="#5F666D"
                                                 BorderBrush="#95A5B0"
                                                 BorderThickness="1.5"
                                                 CornerRadius="5"
                                                 Padding="8"
                                                 Margin="0,0,0,8">
-                                            <StackPanel>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
 
                                                 <!-- 통신 설정 카드 제목 -->
-                                                <TextBlock Text="환경부 Web Agent 및 RTSP 영상 설정"
+                                                <TextBlock Grid.Row="0"
+                                                        Text="COMMUNICATION SETTING"
                                                         Foreground="White"
                                                         FontWeight="Bold"
                                                         HorizontalAlignment="Center"
                                                         Margin="0,0,0,10"/>
 
-                                                <Border Background="#40464D"
-                                                        BorderBrush="#95A5B0"
-                                                        BorderThickness="1"
-                                                        Padding="9">
-                                                    <StackPanel>
+                                                <Border Grid.Row="1"
+                                                        Background="#4B5259"
+                                                        BorderThickness="0"
+                                                        Padding="0"
+                                                        ClipToBounds="True">
+                                                    <TabControl Background="#4B5259"
+                                                                BorderThickness="0"
+                                                                Padding="0"
+                                                                ClipToBounds="True"
+                                                                HorizontalContentAlignment="Stretch"
+                                                                VerticalContentAlignment="Stretch"
+                                                                Style="{StaticResource CommunicationSubTabControlStyle}"
+                                                                ItemContainerStyle="{StaticResource CommunicationSubTabItemStyle}">
+
+                                                        <!-- 환경부 Web Agent 및 EO / IR RTSP 설정 하위 탭 -->
+                                                        <TabItem Header="CONTROL / RTSP">
+                                                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                                          HorizontalScrollBarVisibility="Disabled">
+                                                                <StackPanel Margin="7">
 
                                                         <!-- [1] Control Agent 제어 TCP 설정 -->
                                                         <Grid>
@@ -1090,13 +1532,232 @@
                                                                     Style="{StaticResource DisconnectButtonStyle}"
                                                                     Command="{Binding DisconnectCommand}"/>
                                                         </Grid>
-                                                    </StackPanel>
+
+                                                                </StackPanel>
+                                                            </ScrollViewer>
+                                                        </TabItem>
+
+                                                        <!-- AI Detector 연결 및 분석 설정 하위 탭 -->
+                                                        <TabItem Header="AI DETECTOR">
+                                                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                                          HorizontalScrollBarVisibility="Disabled">
+                                                                <StackPanel Margin="7">
+
+                                                        <!--
+                                                            [3] AI Detector 통합 설정
+
+                                                            기존 하단 AI DETECTOR SETTING 패널의 기능을
+                                                            통신 설정 탭 내부로 이동하여 데모 화면의 빈 공간을
+                                                            줄이고 모든 연결 설정을 한 화면에서 관리한다.
+                                                        -->
+                                                        <TextBlock Text="3. AI DETECTOR SETTING"
+                                                                   Foreground="White"
+                                                                   FontWeight="Bold"
+                                                                   Margin="0,0,0,8"/>
+
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="85"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBox Grid.Column="0"
+                                                                     Style="{StaticResource CommunicationTextBoxStyle}"
+                                                                     Text="{Binding AiControlAgentIp,
+                                                                     Mode=TwoWay,
+                                                                     UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                            <TextBox Grid.Column="1"
+                                                                     Margin="6,0,0,0"
+                                                                     Style="{StaticResource CommunicationTextBoxStyle}"
+                                                                     Text="{Binding AiAgentPort,
+                                                                     Mode=TwoWay,
+                                                                     UpdateSourceTrigger=PropertyChanged}"/>
+                                                        </Grid>
+
+                                                        <!--
+                                                            AI Agent 수동 연결 / 연결 해제
+
+                                                            프로그램 시작 시에는 AI Agent에 자동 연결하지 않으며,
+                                                            사용자가 각 버튼을 누른 경우에만 연결 상태를 변경한다.
+                                                        -->
+                                                        <UniformGrid Columns="2"
+                                                                     Margin="0,0,0,12">
+
+                                                            <Button Content="AI CONNECT"
+                                                                    Height="30"
+                                                                    Margin="0,0,3,0"
+                                                                    Style="{StaticResource AiSettingButtonStyle}"
+                                                                    Background="#1F4F4A"
+                                                                    Command="{Binding ConnectAiAgentCommand}"/>
+
+                                                            <Button Content="AI DISCONNECT"
+                                                                    Height="30"
+                                                                    Margin="3,0,0,0"
+                                                                    Style="{StaticResource AiSettingButtonStyle}"
+                                                                    Background="#5A3030"
+                                                                    Command="{Binding DisconnectAiAgentCommand}"/>
+
+                                                        </UniformGrid>
+
+                                                        <TextBox Height="28"
+                                                                 Margin="0,0,0,8"
+                                                                 Text="{Binding AiRtsp0Address,
+                                                                 Mode=TwoWay,
+                                                                 UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                        <TextBox Height="28"
+                                                                 Margin="0,0,0,10"
+                                                                 Text="{Binding AiRtsp1Address,
+                                                                 Mode=TwoWay,
+                                                                 UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                        <Button Content="APPLY AI RTSP"
+                                                                Height="30"
+                                                                Margin="0,0,0,12"
+                                                                Style="{StaticResource AiSettingButtonStyle}"
+                                                                Background="#263B4A"
+                                                                Command="{Binding ApplyAiRtspCommand}"/>
+
+                                                        <Grid Margin="0,0,0,10">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="8"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <ComboBox Grid.Column="0"
+                                                                      Height="28"
+                                                                      ItemsSource="{Binding AiOnnxList}"
+                                                                      DisplayMemberPath="FileName"
+                                                                      SelectedValuePath="Index"
+                                                                      SelectedValue="{Binding AiRtsp0OnnxIndex,
+                                                                      Mode=TwoWay}"/>
+
+                                                            <ComboBox Grid.Column="2"
+                                                                      Height="28"
+                                                                      ItemsSource="{Binding AiOnnxList}"
+                                                                      DisplayMemberPath="FileName"
+                                                                      SelectedValuePath="Index"
+                                                                      SelectedValue="{Binding AiRtsp1OnnxIndex,
+                                                                      Mode=TwoWay}"/>
+                                                        </Grid>
+
+                                                        <Grid Margin="0,2,0,4">
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="42"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <TextBlock Grid.Row="0"
+                                                                       Text="Confidence"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+                                                            <Slider Grid.Row="0"
+                                                                    Grid.Column="1"
+                                                                    Margin="0,2"
+                                                                    Minimum="0"
+                                                                    Maximum="1"
+                                                                    TickFrequency="0.05"
+                                                                    IsSnapToTickEnabled="True"
+                                                                    Value="{Binding AiMappingConfidence,
+                                                                    Mode=TwoWay}"/>
+                                                            <TextBlock Grid.Row="0"
+                                                                       Grid.Column="2"
+                                                                       Text="{Binding AiMappingConfidenceText}"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+
+                                                            <TextBlock Grid.Row="1"
+                                                                       Text="IOU"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+                                                            <Slider Grid.Row="1"
+                                                                    Grid.Column="1"
+                                                                    Margin="0,2"
+                                                                    Minimum="0"
+                                                                    Maximum="1"
+                                                                    TickFrequency="0.05"
+                                                                    IsSnapToTickEnabled="True"
+                                                                    Value="{Binding AiMappingIou,
+                                                                    Mode=TwoWay}"/>
+                                                            <TextBlock Grid.Row="1"
+                                                                       Grid.Column="2"
+                                                                       Text="{Binding AiMappingIouText}"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+
+                                                            <TextBlock Grid.Row="2"
+                                                                       Text="Box Filter"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+                                                            <Slider Grid.Row="2"
+                                                                    Grid.Column="1"
+                                                                    Margin="0,2"
+                                                                    Minimum="0"
+                                                                    Maximum="1"
+                                                                    TickFrequency="0.05"
+                                                                    IsSnapToTickEnabled="True"
+                                                                    Value="{Binding AiDisplayConfidenceThreshold,
+                                                                    Mode=TwoWay}"/>
+                                                            <TextBlock Grid.Row="2"
+                                                                       Grid.Column="2"
+                                                                       Text="{Binding AiDisplayConfidenceThresholdText}"
+                                                                       Foreground="White"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Grid>
+
+                                                        <Grid Margin="0,12,0,0">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="8"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <Button Grid.Column="0"
+                                                                    Content="APPLY MAPPING"
+                                                                    Height="30"
+                                                                    Style="{StaticResource AiSettingButtonStyle}"
+                                                                    Background="#34505F"
+                                                                    Command="{Binding ApplyAiMappingCommand}"/>
+
+                                                            <Button Grid.Column="2"
+                                                                    Content="REFRESH AI INFO"
+                                                                    Height="30"
+                                                                    Style="{StaticResource AiSettingButtonStyle}"
+                                                                    Background="#3A4058"
+                                                                    Command="{Binding RefreshAiSettingCommand}"/>
+                                                        </Grid>
+
+                                                        <CheckBox Content="AUTO TRACKING"
+                                                                  Foreground="#00E676"
+                                                                  FontWeight="Bold"
+                                                                  IsChecked="{Binding IsAutoTrackingEnabled}"
+                                                                  Margin="0,12,0,0"/>
+
+                                                        <TextBlock Text="{Binding AiSettingStatusText}"
+                                                                   Foreground="#00E676"
+                                                                   FontSize="11"
+                                                                   FontWeight="Bold"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,6,0,0"/>
+                                                                </StackPanel>
+                                                            </ScrollViewer>
+                                                        </TabItem>
+                                                    </TabControl>
                                                 </Border>
-                                            </StackPanel>
+                                            </Grid>
                                         </Border>
 
                                         <!-- 영상 및 장비 상태 카드 -->
-                                        <Border Background="#5F666D"
+                                        <Border Grid.Row="1"
+                                                Background="#5F666D"
                                                 BorderBrush="#95A5B0"
                                                 BorderThickness="1.5"
                                                 CornerRadius="5"
@@ -1115,22 +1776,26 @@
                                                     <Grid>
                                                         <Grid.RowDefinitions>
                                                             <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
                                                         <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="85"/>
+                                                            <ColumnDefinition Width="70"/>
                                                             <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
 
-                                                        <TextBlock Grid.Row="2"
+                                                        <TextBlock Grid.Row="0"
                                                                 Text="POWER"
                                                                 Foreground="#D0D7DE"
-                                                                Margin="0,6,0,3"/>
-                                                        <TextBlock Grid.Row="2"
-                                                                Grid.Column="1"
                                                                 FontWeight="Bold"
-                                                                Margin="0,6,0,3">
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,2,0,2"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                Grid.Column="1"
+                                                                FontSize="10.5"
+                                                                FontWeight="Bold"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Center"
+                                                                Margin="14,2,0,2">
 
                                                             <Run Text="CONTROL:"
                                                                     Foreground="#4FD1C5"/>
@@ -1159,14 +1824,23 @@
                                                                     Mode=OneWay}"
                                                                     Foreground="#9FE870"/>
 
+                                                            <Run Text=" / "
+                                                                    Foreground="#D0D7DE"/>
+
+                                                            <Run Text="AI:"
+                                                                    Foreground="#FFD166"/>
+
+                                                            <Run Text="{Binding AiPowerStatusText,
+                                                                    Mode=OneWay}"
+                                                                    Foreground="#9FE870"/>
+
                                                         </TextBlock>
                                                     </Grid>
 
                                                 </Border>
                                             </StackPanel>
                                         </Border>
-                                    </StackPanel>
-                                </ScrollViewer>
+                                </Grid>
                             </TabItem>
 
                             <!-- 기존 장비 제어 UI -->
@@ -1885,8 +2559,20 @@
 
                                                             <Button Content="TILT GO"
                                                                     Height="30"
+                                                                    Margin="0,0,0,8"
                                                                     Style="{StaticResource EoControlButtonStyle}"
                                                                     Command="{Binding MoveTiltAbsoluteCommand}"/>
+
+                                                            <!--
+                                                                Absolute 위치 이동 전용 정지
+
+                                                                방향 버튼 중앙 STOP과 달리 위치 이동 정지 명령
+                                                                Command2=0x4F를 Pan / Tilt 축에 각각 송신한다.
+                                                            -->
+                                                            <Button Content="STOP ABSOLUTE MOVE"
+                                                                    Height="30"
+                                                                    Style="{StaticResource StopButtonStyle}"
+                                                                    Command="{Binding StopAbsoluteMoveCommand}"/>
 
                                                         </StackPanel>
 
@@ -3151,6 +3837,7 @@
                 내부 AI 설정 UI만 숨긴다. -->
             <Border Grid.Row="1"
                     x:Name="AiDetectorPanelBorder"
+                    Visibility="Collapsed"
                     Margin="5,5,5,5"
                     Background="#20262D"
                     BorderBrush="#4F6773"
@@ -3230,12 +3917,23 @@
                                         Margin="0,0,0,5"
                                         Text="{Binding AiAgentPort, UpdateSourceTrigger=PropertyChanged}"/>
 
-                                <Button Grid.Row="2"
-                                        Grid.ColumnSpan="2"
-                                        Content="AI CONNECT"
-                                        Style="{StaticResource AiSettingButtonStyle}"
-                                        Background="#1F4F4A"
-                                        Command="{Binding ConnectAiAgentCommand}"/>
+                                <UniformGrid Grid.Row="2"
+                                             Grid.ColumnSpan="2"
+                                             Columns="2">
+
+                                    <Button Content="AI CONNECT"
+                                            Margin="0,0,3,0"
+                                            Style="{StaticResource AiSettingButtonStyle}"
+                                            Background="#1F4F4A"
+                                            Command="{Binding ConnectAiAgentCommand}"/>
+
+                                    <Button Content="AI DISCONNECT"
+                                            Margin="3,0,0,0"
+                                            Style="{StaticResource AiSettingButtonStyle}"
+                                            Background="#5A3030"
+                                            Command="{Binding DisconnectAiAgentCommand}"/>
+
+                                </UniformGrid>
                             </Grid>
 
                         </GroupBox>
@@ -3565,5 +4263,7 @@
 
         </Grid>
     </Viewbox>
+    </Grid>
+    </Border>
 
 </Window>

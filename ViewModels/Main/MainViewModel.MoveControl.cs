@@ -445,6 +445,26 @@ namespace OpenCvWpfTracking.ViewModels.Main
         }
 
         /// <summary>
+        /// [PAN] / [TILT] Absolute 위치 이동 정지
+        ///
+        /// 방향 버튼 중앙의 STOP은 연속 속도 이동(0x00)을 정지한다.
+        /// Absolute 이동은 위치 이동 전용 정지 명령인 0x4F를 사용해야 하므로,
+        /// Pan 정지(Data1=0x01)와 Tilt 정지(Data1=0x02)를 각각 송신한다.
+        /// </summary>
+        private void StopAbsoluteMove()
+        {
+            bool stopResult =
+                _controlCommandService
+                    .StopPanTiltPositionMove();
+
+            ClearActivePanTiltAbsoluteMove();
+
+            ConsoleLogHelper.Command(
+                "ABSOLUTE MOVE",
+                $"Position stop requested / CMD2=0x4F / RESULT={stopResult}");
+        }
+
+        /// <summary>
         /// 위치 이동 중 속도 변경 시 현재 Absolute 목표를 그대로 재송신한다.
         ///
         /// 일부 장비는 0x49 / 0x4B 속도 설정을 다음 위치 이동 명령부터

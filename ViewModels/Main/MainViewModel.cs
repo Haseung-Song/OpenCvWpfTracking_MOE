@@ -1182,6 +1182,14 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private string _aiSettingStatusText = "AI Setting Ready";
 
         /// <summary>
+        /// [AI Detector Agent] 연결 상태 화면 표시 문자열
+        ///
+        /// CONNECTION STATUS 영역의 AI 상태를
+        /// CONTROL / EO / IR 상태와 동일한 형식으로 표시한다.
+        /// </summary>
+        private string _aiPowerStatusText = "OFF";
+
+        /// <summary>
         /// [AI Tracking] 자동 추적 사용 여부
         /// </summary>
         private bool _isAutoTrackingEnabled;
@@ -1494,123 +1502,15 @@ namespace OpenCvWpfTracking.ViewModels.Main
             /// [AI Detector Agent] 수동 연결
             ///
             /// 기존 [AI Detector Agent] 연결 및 자동 재연결 루프를 정리한 뒤,
-            /// UI에 입력된 [IP] / [Port] 기준으로 새 자동 재연결 루프를 시작한다.
+            /// UI에 입력된 [IP] / [Port] 기준으로 수동 1회 연결을 수행한다.
             /// </summary>
             ConnectAiAgentCommand =
-                new RelayCommand(() =>
-                {
-                    AiSettingStatusText = "[AI] Reconnect Start...";
+                new AsyncRelayCommand(
+                    ConnectAiAgentFromSettingAsync);
 
-                    _ = _aiDetectorClientService.RestartAutoReconnectAsync(
-                        AiControlAgentIp,
-                        AiAgentPort,
-                        3000);
-
-                    AiSettingStatusText = "[AI] Reconnect Started";
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await Task.Delay(3000);
-
-                            /// <summary>
-                            /// [AI Detector Agent] 연결 상태 확인
-                            ///
-                            /// [IP] / [Port] 오류 또는
-                            /// [AI Agent] 미실행 상태일 경우
-                            /// 설정 요청을 진행하지 않는다.
-                            /// </summary>
-                            if (!_aiDetectorClientService.IsConnected)
-                            {
-                                AiSettingStatusText = "[AI] Connect Failed";
-                                return;
-                            }
-
-                            /// <summary>
-                            /// [AI Detector Agent] [RTSP] 주소 적용
-                            /// </summary>
-                            if (!await RequestAiDetectorRtspAddressSetAsync())
-                            {
-                                AiSettingStatusText = "[AI] RTSP Apply Failed";
-                                return;
-                            }
-
-                            await Task.Delay(300);
-
-                            /// <summary>
-                            /// [AI Detector Agent] 정보 조회
-                            /// </summary>
-                            if (!await RequestAiDetectorInfoAsync())
-                            {
-                                AiSettingStatusText = "[AI] Info Request Failed";
-                                return;
-                            }
-
-                            await Task.Delay(300);
-
-                            /// <summary>
-                            /// [AI Detector Agent] [RTSP] 주소 조회
-                            /// </summary>
-                            if (!await RequestAiDetectorRtspAddressAsync())
-                            {
-                                AiSettingStatusText = "[AI] RTSP Request Failed";
-                                return;
-                            }
-
-                            await Task.Delay(300);
-
-                            /// <summary>
-                            /// [AI Detector Agent] [ONNX] 모델 목록 조회
-                            /// </summary>
-                            if (!await RequestAiDetectorOnnxListAsync())
-                            {
-                                AiSettingStatusText = "[AI] ONNX Request Failed";
-                                return;
-                            }
-
-                            await Task.Delay(300);
-
-                            /// <summary>
-                            /// [RTSP] ↔ [ONNX] [Mapping] 설정 적용
-                            /// </summary>
-                            if (!await RequestAiDetectorMappingSetAsync())
-                            {
-                                AiSettingStatusText = "[AI] Mapping Apply Failed";
-                                return;
-                            }
-
-                            await Task.Delay(300);
-
-                            /// <summary>
-                            /// [RTSP] ↔ [ONNX] [Mapping] 정보 조회
-                            /// </summary>
-                            if (!await RequestAiDetectorMappingAsync())
-                            {
-                                AiSettingStatusText = "[AI] Mapping Request Failed";
-                                return;
-                            }
-
-                            /// <summary>
-                            /// [AI Detector Agent] 연결 및 설정 완료
-                            /// </summary>
-                            AiSettingStatusText = "[AI] Connect / Setting Complete";
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(
-                                "[AI ERROR] Connect / Setting Exception : " +
-                                ex.Message);
-
-                            ConsoleLogHelper.PrintLine();
-
-                            AiSettingStatusText =
-                                "[AI] Connect / Setting Incomplete";
-                        }
-
-                    });
-
-                });
+            DisconnectAiAgentCommand =
+                new RelayCommand(
+                    DisconnectAiAgent);
 
             /// <summary>
             /// [AI Detector Agent] [RTSP] 주소 적용
@@ -1858,6 +1758,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
             MoveTiltAbsoluteCommand =
                 new RelayCommand(
                     MoveTiltAbsoluteFromInput);
+
+            StopAbsoluteMoveCommand =
+                new RelayCommand(
+                    StopAbsoluteMove);
 
             SetZoomPositionCommand =
                 new AsyncRelayCommand(

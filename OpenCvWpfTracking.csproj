@@ -187,7 +187,14 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="Images\Demo\BackPanel.png" />
+    <Resource Include="Images\Demo\GlobalSystemsLogo.png" />
+    <Resource Include="Images\Demo\GlobalSystemsTacticalMap.png" />
+    <Resource Include="Images\Demo\LogoBlackBackground.png" />
+    <Resource Include="Images\Demo\DefaultRooftopPanorama.jpg" />
+    <Resource Include="Images\Demo\TorussLogo.png" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="FFmpeg\avcodec-62.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

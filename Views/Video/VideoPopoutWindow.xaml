@@ -24,8 +24,14 @@
             별도 RTSP Decoder나 Capture Loop를 생성하지 않으므로
             메인 화면과 분리 창이 동일 프레임을 공유한다.
         -->
+        <!--
+            분리 영상 창은 원본 종횡비를 유지하면서 화면 전체를 채운다.
+
+            창과 영상의 종횡비가 다를 경우 중앙을 기준으로 일부 영역만
+            잘라내어 상하좌우의 검은 여백이 표시되지 않도록 한다.
+        -->
         <Image x:Name="CameraImage"
-               Stretch="Uniform"
+               Stretch="UniformToFill"
                RenderOptions.BitmapScalingMode="LowQuality"
                SnapsToDevicePixels="True"
                UseLayoutRounding="True"/>

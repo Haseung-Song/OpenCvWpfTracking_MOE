@@ -1,9 +1,12 @@
 ﻿using OpenCvWpfTracking.Common;
+using Microsoft.Win32;
 using OpenCvWpfTracking.ViewModels.Main;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace OpenCvWpfTracking
 {
@@ -273,6 +276,95 @@ namespace OpenCvWpfTracking
 
         #endregion
 
+        #region [Window Title Bar Events]
+
+        /// <summary>
+        /// 사용자 정의 Title Bar 마우스 입력 처리.
+        ///
+        /// 한 번 누른 상태로 이동하면 창을 이동하고,
+        /// 두 번 누르면 최대화 / 이전 크기를 전환한다.
+        /// </summary>
+        private void WindowTitleBar_MouseLeftButtonDown(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            if (e.Source is Button)
+            {
+                return;
+            }
+
+            if (e.ClickCount ==
+                2)
+            {
+                ToggleWindowState();
+                return;
+            }
+
+            if (e.LeftButton ==
+                MouseButtonState.Pressed)
+            {
+                DragMove();
+            }
+        }
+
+        /// <summary>
+        /// 프로그램 창 최소화.
+        /// </summary>
+        private void MinimizeWindowButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            WindowState =
+                WindowState.Minimized;
+        }
+
+        /// <summary>
+        /// 프로그램 창 최대화 / 이전 크기 전환.
+        /// </summary>
+        private void MaximizeRestoreWindowButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            ToggleWindowState();
+        }
+
+        /// <summary>
+        /// 프로그램 종료 확인.
+        ///
+        /// 사용자가 확인을 선택한 경우에만 MainWindow를 종료한다.
+        /// </summary>
+        private void CloseWindowButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            MessageBoxResult result =
+                MessageBox.Show(
+                    this,
+                    "프로그램을 종료하시겠습니까?",
+                    "프로그램 종료",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question);
+
+            if (result ==
+                MessageBoxResult.OK)
+            {
+                Close();
+            }
+        }
+
+        /// <summary>
+        /// 현재 창 상태에 따라 최대화와 이전 크기를 전환한다.
+        /// </summary>
+        private void ToggleWindowState()
+        {
+            WindowState =
+                WindowState == WindowState.Maximized
+                    ? WindowState.Normal
+                    : WindowState.Maximized;
+        }
+
+        #endregion
+
         #region [Window Keyboard Events]
 
         /// <summary>
@@ -287,6 +379,98 @@ namespace OpenCvWpfTracking
         {
             Keyboard.Focus(
                 this);
+        }
+
+        /// <summary>
+        /// [Demo Panorama] 새 파노라마 이미지 선택
+        ///
+        /// 현 단계에서는 실시간 Stitching을 수행하지 않고,
+        /// 새 파노라마로 사용할 정적 JPG / PNG 파일을 선택하여 표시한다.
+        /// 추후 다중 영상 합성 기능을 추가할 때 이 진입점을 그대로 확장한다.
+        /// </summary>
+        private void NewPanoramaButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            SelectAndLoadPanoramaImage();
+        }
+
+        /// <summary>
+        /// [Demo Panorama] 기존 파노라마 이미지 불러오기
+        /// </summary>
+        private void LoadPanoramaImageButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            SelectAndLoadPanoramaImage();
+        }
+
+        /// <summary>
+        /// 정적 파노라마 파일을 선택하고 화면에 표시한다.
+        ///
+        /// BitmapCacheOption.OnLoad를 사용하여 파일 전체를 메모리에 읽은 뒤
+        /// 원본 파일 잠금을 해제한다. 따라서 이미지를 표시한 상태에서도
+        /// 외부 편집 프로그램에서 동일 파일을 수정하거나 교체할 수 있다.
+        /// </summary>
+        private void SelectAndLoadPanoramaImage()
+        {
+            OpenFileDialog dialog =
+                new OpenFileDialog
+                {
+                    Title =
+                        "파노라마 이미지 선택",
+                    Filter =
+                        "Image Files (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|All Files (*.*)|*.*",
+                    CheckFileExists =
+                        true,
+                    Multiselect =
+                        false
+                };
+
+            if (dialog.ShowDialog(this) !=
+                true)
+            {
+                return;
+            }
+
+            try
+            {
+                BitmapImage bitmap =
+                    new BitmapImage();
+
+                bitmap.BeginInit();
+                bitmap.CacheOption =
+                    BitmapCacheOption.OnLoad;
+                bitmap.CreateOptions =
+                    BitmapCreateOptions.IgnoreImageCache;
+                bitmap.UriSource =
+                    new Uri(
+                        dialog.FileName,
+                        UriKind.Absolute);
+                bitmap.EndInit();
+                bitmap.Freeze();
+
+                PanoramaImage.Source =
+                    bitmap;
+
+                PanoramaEmptyText.Visibility =
+                    Visibility.Collapsed;
+
+                PanoramaFileNameText.Text =
+                    "ROOFTOP PANORAMA / " +
+                    Path.GetFileName(
+                        dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    "파노라마 이미지를 불러올 수 없습니다.\n\n" +
+                    ex.Message,
+                    "파노라마 이미지 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         /// <summary>
