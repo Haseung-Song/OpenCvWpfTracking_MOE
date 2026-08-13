@@ -345,6 +345,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsRooftopStatusSelected));
                 OnPropertyChanged(nameof(IsEnvironmentStatusSelected));
+                OnPropertyChanged(nameof(IsRooftopThermalPaletteVisible));
+                OnPropertyChanged(nameof(IsEnvironmentThermalPaletteVisible));
                 OnPropertyChanged(nameof(CurrentStatusEquipmentText));
                 OnPropertyChanged(nameof(IsHomeZeroVisible));
                 OnPropertyChanged(nameof(CurrentIrZoomText));
@@ -364,6 +366,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
         public bool IsEnvironmentStatusSelected =>
             SelectedEquipmentStatusMode == EquipmentStatusMode.Environment;
+
+        public bool IsRooftopThermalPaletteVisible => IsRooftopStatusSelected;
+
+        public bool IsEnvironmentThermalPaletteVisible => IsEnvironmentStatusSelected;
 
         public string CurrentStatusEquipmentText =>
             "ENVIRONMENT EQUIPMENT / WEB AGENT";
@@ -1388,7 +1394,46 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     value;
 
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedEoRtspSource));
+                OnPropertyChanged(nameof(IsEoRtspDirectInput));
 
+            }
+
+        }
+
+        private RtspSourceOption _selectedEoRtspSource;
+        private RtspSourceOption _selectedIrRtspSource;
+        private RtspSourceOption _selectedAiEoRtspSource;
+        private RtspSourceOption _selectedAiIrRtspSource;
+
+        /// <summary>
+        /// 통신 설정 탭에서 선택된 EO RTSP 프리셋
+        /// </summary>
+        public RtspSourceOption SelectedEoRtspSource
+        {
+            get => _selectedEoRtspSource ?? EoRtspSourceOptions.FirstOrDefault(
+                       option => string.Equals(
+                           option.Address,
+                           EoSourceAddress,
+                           StringComparison.OrdinalIgnoreCase))
+                   ?? EoRtspSourceOptions.FirstOrDefault(option => option.IsDirectInput);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                _selectedEoRtspSource = value;
+
+                if (!value.IsDirectInput)
+                {
+                    EoSourceAddress =
+                        value.Address;
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsEoRtspDirectInput));
             }
 
         }
@@ -1414,9 +1459,49 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     value;
 
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedIrRtspSource));
+                OnPropertyChanged(nameof(IsIrRtspDirectInput));
             }
 
         }
+
+        /// <summary>
+        /// 통신 설정 탭에서 선택된 IR RTSP 프리셋
+        /// </summary>
+        public RtspSourceOption SelectedIrRtspSource
+        {
+            get => _selectedIrRtspSource ?? IrRtspSourceOptions.FirstOrDefault(
+                       option => string.Equals(
+                           option.Address,
+                           IrSourceAddress,
+                           StringComparison.OrdinalIgnoreCase))
+                   ?? IrRtspSourceOptions.FirstOrDefault(option => option.IsDirectInput);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                _selectedIrRtspSource = value;
+
+                if (!value.IsDirectInput)
+                {
+                    IrSourceAddress =
+                        value.Address;
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsIrRtspDirectInput));
+            }
+
+        }
+
+        public bool IsEoRtspDirectInput =>
+            SelectedEoRtspSource?.IsDirectInput == true;
+
+        public bool IsIrRtspDirectInput =>
+            SelectedIrRtspSource?.IsDirectInput == true;
 
         #endregion
 
@@ -1636,6 +1721,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     _aiRtsp0Address = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedAiEoRtspSource));
+                    OnPropertyChanged(nameof(IsAiEoRtspDirectInput));
                 }
 
             }
@@ -1654,6 +1741,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     _aiRtsp1Address = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedAiIrRtspSource));
+                    OnPropertyChanged(nameof(IsAiIrRtspDirectInput));
                 }
 
             }
@@ -1791,6 +1880,76 @@ namespace OpenCvWpfTracking.ViewModels.Main
             }
 
         }
+
+        /// <summary>
+        /// AI Detector에 적용할 EO RTSP 프리셋
+        /// </summary>
+        public RtspSourceOption SelectedAiEoRtspSource
+        {
+            get => _selectedAiEoRtspSource ?? EoRtspSourceOptions.FirstOrDefault(
+                       option => string.Equals(
+                           option.Address,
+                           AiRtsp0Address,
+                           StringComparison.OrdinalIgnoreCase))
+                   ?? EoRtspSourceOptions.FirstOrDefault(option => option.IsDirectInput);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                _selectedAiEoRtspSource = value;
+
+                if (!value.IsDirectInput)
+                {
+                    AiRtsp0Address =
+                        value.Address;
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsAiEoRtspDirectInput));
+            }
+
+        }
+
+        /// <summary>
+        /// AI Detector에 적용할 IR RTSP 프리셋
+        /// </summary>
+        public RtspSourceOption SelectedAiIrRtspSource
+        {
+            get => _selectedAiIrRtspSource ?? IrRtspSourceOptions.FirstOrDefault(
+                       option => string.Equals(
+                           option.Address,
+                           AiRtsp1Address,
+                           StringComparison.OrdinalIgnoreCase))
+                   ?? IrRtspSourceOptions.FirstOrDefault(option => option.IsDirectInput);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                _selectedAiIrRtspSource = value;
+
+                if (!value.IsDirectInput)
+                {
+                    AiRtsp1Address =
+                        value.Address;
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsAiIrRtspDirectInput));
+            }
+
+        }
+
+        public bool IsAiEoRtspDirectInput =>
+            SelectedAiEoRtspSource?.IsDirectInput == true;
+
+        public bool IsAiIrRtspDirectInput =>
+            SelectedAiIrRtspSource?.IsDirectInput == true;
 
         /// <summary>
         /// [AI Detector Agent] 연결 상태 화면 표시 문자열
@@ -2508,6 +2667,54 @@ namespace OpenCvWpfTracking.ViewModels.Main
         #endregion
 
         #region [Binding Collections]
+
+        /// <summary>
+        /// 통신 설정 및 AI 설정에서 공통으로 사용하는 EO RTSP 프리셋 목록
+        /// </summary>
+        public ObservableCollection<RtspSourceOption> EoRtspSourceOptions { get; }
+            = new ObservableCollection<RtspSourceOption>
+            {
+                new RtspSourceOption(
+                    "1층 생산팀 ADS 주간(EO)",
+                    "rtsp://service:Xhddlf1!@192.168.0.100:554/rtsp_tunnel"),
+
+                new RtspSourceOption(
+                    "옥상 GOP 주간(EO)",
+                    "rtsp://root:rmffhqjf1!@192.168.1.2:554/AVStream1_1"),
+
+                new RtspSourceOption(
+                    "4층 환경부 PTZ 주간(EO)",
+                    MoeEoRtspAddress),
+
+                new RtspSourceOption(
+                    "직접 입력",
+                    string.Empty,
+                    isDirectInput: true)
+            };
+
+        /// <summary>
+        /// 통신 설정 및 AI 설정에서 공통으로 사용하는 IR RTSP 프리셋 목록
+        /// </summary>
+        public ObservableCollection<RtspSourceOption> IrRtspSourceOptions { get; }
+            = new ObservableCollection<RtspSourceOption>
+            {
+                new RtspSourceOption(
+                    "1층 생산팀 ADS 열상(IR)",
+                    "rtsp://admin:admin@192.168.0.101:554/hdmi"),
+
+                new RtspSourceOption(
+                    "옥상 GOP 열상(IR)",
+                    "rtsp://root:rmffhqjf1!@192.168.0.121:554/cam0_0"),
+
+                new RtspSourceOption(
+                    "4층 환경부 PTZ 열상(IR)",
+                    MoeIrRtspAddress),
+
+                new RtspSourceOption(
+                    "직접 입력",
+                    string.Empty,
+                    isDirectInput: true)
+            };
 
         /// <summary>
         /// [EO] 화면에 표시할 [AI Detector] [Bounding Box] 목록

@@ -1575,6 +1575,12 @@
                                                                                 </StackPanel>
                                                                             </Grid>
 
+                                                                            <!--
+                                                                                [환경부 EO RTSP]
+
+                                                                                환경부 버전은 카메라 목록을 선택하는 구조가 아니라
+                                                                                Web Agent에 적용할 RTSP 주소를 직접 입력한다.
+                                                                            -->
                                                                             <TextBox Grid.Row="2"
                                                                                      Style="{StaticResource CommunicationTextBoxStyle}"
                                                                                      Text="{Binding EoSourceAddress,
@@ -1621,6 +1627,12 @@
                                                                                 </StackPanel>
                                                                             </Grid>
 
+                                                                            <!--
+                                                                                [환경부 IR RTSP]
+
+                                                                                열상 영상도 EO 영상과 동일하게 RTSP 주소를
+                                                                                입력창에서 직접 변경한 뒤 다음 장비 연결 시 적용한다.
+                                                                            -->
                                                                             <TextBox Grid.Row="4"
                                                                                      Style="{StaticResource CommunicationTextBoxStyle}"
                                                                                      Text="{Binding IrSourceAddress,
@@ -1661,7 +1673,7 @@
                                                             </TabItem>
 
                                                             <!-- AI Detector 연결 및 분석 설정 하위 탭 -->
-                                                            <TabItem Header="AI DETECTOR">
+                                                            <TabItem Header="AI / FIRE DETECTOR">
                                                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                               HorizontalScrollBarVisibility="Disabled">
                                                                     <StackPanel Margin="7">
@@ -1723,6 +1735,12 @@
 
                                                                         </UniformGrid>
 
+                                                                        <!--
+                                                                            [환경부 AI 분석 RTSP]
+
+                                                                            환경부 버전은 고정 프리셋 목록을 사용하지 않는다.
+                                                                            AI 분석에 사용할 EO / IR RTSP 주소를 직접 입력한다.
+                                                                        -->
                                                                         <TextBox Height="28"
                                                                                  Margin="0,0,0,8"
                                                                                  Text="{Binding AiRtsp0Address,
@@ -1870,6 +1888,103 @@
                                                                                    FontWeight="Bold"
                                                                                    TextWrapping="Wrap"
                                                                                    Margin="0,6,0,0"/>
+
+                                                                        <!--
+                                                                            [열영상 팔레트 / 화재 후보 검출 시험]
+
+                                                                            팔레트 제어는 ThermalCamCon 실장비 명령의
+                                                                            Address 0x0E / Palette 0x00 ~ 0x09를 사용한다.
+
+                                                                            화재 후보 검출은 방사 온도값이 아닌
+                                                                            IR 영상의 밝기 및 적색 계열 픽셀을 분석하는
+                                                                            시험 기능이므로 FIRE CANDIDATE로 표시한다.
+                                                                        -->
+                                                                        <Border Margin="0,14,0,0"
+                                                                                Padding="10"
+                                                                                Background="#464D54"
+                                                                                BorderBrush="#81909A"
+                                                                                BorderThickness="1"
+                                                                                CornerRadius="4">
+                                                                            <StackPanel>
+                                                                                <TextBlock Text="4. FIRE DETECTOR SETTING"
+                                                                                           Foreground="#FFD166"
+                                                                                           FontWeight="Bold"
+                                                                                           HorizontalAlignment="Center"
+                                                                                           Margin="0,0,0,10"/>
+
+                                                                                <UniformGrid Columns="3" Margin="0,0,0,6">
+                                                                                    <Button Content="BLACK HOT" Height="30" Margin="0,0,3,0" Style="{StaticResource AiSettingButtonStyle}" Command="{Binding SelectThermalBlackHotCommand}"/>
+                                                                                    <Button Content="WHITE HOT" Height="30" Margin="3,0" Style="{StaticResource AiSettingButtonStyle}" Command="{Binding SelectThermalWhiteHotCommand}"/>
+                                                                                    <Button Content="RAINBOW" Height="30" Margin="3,0,0,0" Style="{StaticResource AiSettingButtonStyle}" Command="{Binding SelectThermalRainbowCommand}"/>
+                                                                                </UniformGrid>
+
+                                                                                <UniformGrid Columns="3"
+                                                                                             Margin="0,0,0,12">
+                                                                                    <Button Content="PREV"
+                                                                                            Height="30"
+                                                                                            Margin="0,0,3,0"
+                                                                                            Style="{StaticResource AiSettingButtonStyle}"
+                                                                                            Command="{Binding PreviousThermalPaletteCommand}"/>
+
+                                                                                    <Button Content="NEXT"
+                                                                                            Height="30"
+                                                                                            Margin="3,0"
+                                                                                            Style="{StaticResource AiSettingButtonStyle}"
+                                                                                            Command="{Binding NextThermalPaletteCommand}"/>
+
+                                                                                    <Button Content="NUC"
+                                                                                            Height="30"
+                                                                                            Margin="3,0,0,0"
+                                                                                            Style="{StaticResource AiSettingButtonStyle}"
+                                                                                            Background="#5A4A30"
+                                                                                            Command="{Binding RequestThermalNucCommand}"/>
+                                                                                </UniformGrid>
+
+                                                                                <Button Content="TEST PROGRAM"
+                                                                                        Height="30"
+                                                                                        Margin="0,0,0,8"
+                                                                                        Style="{StaticResource AiSettingButtonStyle}"
+                                                                                        Background="#7A3434"
+                                                                                        Click="FireDetectorTestProgram_Click"/>
+
+                                                                                <CheckBox Content="FIRE DETECTOR"
+                                                                                          Foreground="#FF8A80"
+                                                                                          FontWeight="Bold"
+                                                                                          IsChecked="{Binding IsThermalFireDetectionEnabled,
+                                                                                                  Mode=TwoWay}"
+                                                                                          Margin="0,0,0,8"/>
+
+                                                                                <TextBlock Text="HOT PIXEL THRESHOLD"
+                                                                                           Foreground="White"/>
+                                                                                <Slider Minimum="0"
+                                                                                        Maximum="1"
+                                                                                        TickFrequency="0.01"
+                                                                                        IsSnapToTickEnabled="True"
+                                                                                        Value="{Binding ThermalHotThresholdRatio,
+                                                                                                Mode=TwoWay}"
+                                                                                        Margin="0,3,0,0"/>
+                                                                                <TextBlock Text="{Binding ThermalHotThresholdRatio,
+                                                                                                  StringFormat=THRESHOLD : {0:F2}}"
+                                                                                           Foreground="#D0D7DE"
+                                                                                           HorizontalAlignment="Right"
+                                                                                           Margin="0,0,0,8"/>
+
+                                                                                <TextBlock Text="MINIMUM FIRE DETECTOR AREA"
+                                                                                           Foreground="White"/>
+                                                                                <Slider Minimum="0.001"
+                                                                                        Maximum="0.25"
+                                                                                        TickFrequency="0.01"
+                                                                                        IsSnapToTickEnabled="True"
+                                                                                        Value="{Binding ThermalMinimumAreaRatio,
+                                                                                                Mode=TwoWay}"
+                                                                                        Margin="0,3,0,0"/>
+                                                                                <TextBlock Text="{Binding ThermalMinimumAreaRatio,
+                                                                                                  StringFormat=MIN AREA RATIO : {0:F2}}"
+                                                                                           Foreground="#D0D7DE"
+                                                                                           HorizontalAlignment="Right"/>
+
+                                                                            </StackPanel>
+                                                                        </Border>
                                                                     </StackPanel>
                                                                 </ScrollViewer>
                                                             </TabItem>
@@ -1897,9 +2012,6 @@
                                                             BorderThickness="1"
                                                             Padding="9">
                                                         <Grid>
-                                                            <Grid.RowDefinitions>
-                                                                <RowDefinition Height="Auto"/>
-                                                            </Grid.RowDefinitions>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="70"/>
                                                                 <ColumnDefinition Width="*"/>
@@ -1912,15 +2024,15 @@
                                                                        HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center"
                                                                        Margin="0,2,0,2"/>
-                                                            <TextBlock Grid.Row="0"
-                                                                       Grid.Column="1"
+                                                            <TextBlock Grid.Column="1"
                                                                        FontSize="10.5"
                                                                        FontWeight="Bold"
-                                                                       HorizontalAlignment="Left"
+                                                                       HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center"
-                                                                       Margin="14,2,0,2">
+                                                                       TextAlignment="Center"
+                                                                       Margin="4,2,4,2">
 
-                                                                <Run Text="CONTROL:"
+                                                                <Run Text="TCP:"
                                                                      Foreground="#4FD1C5"/>
 
                                                                 <Run Text="{Binding CurrentControlPowerText,
@@ -1957,6 +2069,15 @@
                                                                              Mode=OneWay}"
                                                                      Foreground="#9FE870"/>
 
+                                                                <Run Text=" / "
+                                                                     Foreground="#D0D7DE"/>
+
+                                                                <Run Text="FIRE:"
+                                                                     Foreground="#FF8A80"/>
+
+                                                                <Run Text="{Binding FirePowerStatusText,
+                                                                             Mode=OneWay}"
+                                                                     Foreground="#9FE870"/>
                                                             </TextBlock>
                                                         </Grid>
 
@@ -2329,9 +2450,9 @@
                                                                                     <DataTrigger Binding="{Binding IsCrosshairVisible}"
                                                                                                  Value="True">
                                                                                         <Setter Property="Background"
-                                                                                                Value="#2F6F5E"/>
+                                                                                                Value="{Binding CrosshairBrush}"/>
                                                                                         <Setter Property="BorderBrush"
-                                                                                                Value="#72D6B3"/>
+                                                                                                Value="{Binding CrosshairBrush}"/>
                                                                                     </DataTrigger>
                                                                                     <Trigger Property="IsMouseOver"
                                                                                              Value="True">

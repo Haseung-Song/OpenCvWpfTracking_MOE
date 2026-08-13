@@ -23,6 +23,21 @@ namespace OpenCvWpfTracking.Services.Communication
         private readonly TcpClientService _tcpClientService;
 
         /// <summary>
+        /// LA 프로그램과 동일하게 추적하는 열영상 Palette Index.
+        ///
+        /// LA는 시작 시 BLACK HOT(0)으로 초기화되며,
+        /// Viewer도 같은 기준에서 PREV / NEXT 명령만 사용한다.
+        /// </summary>
+        private int _currentIrPaletteIndex =
+            0;
+
+        private readonly object _irPaletteSync =
+            new object();
+
+        private const int IrPaletteCount =
+            10;
+
+        /// <summary>
         /// [Unit ID]
         /// 
         /// [TORUSS] 문서 기준 기본 [0x01] 고정 사용.
@@ -1276,6 +1291,220 @@ namespace OpenCvWpfTracking.Services.Communication
                 0x02,
                 0x00);
         }
+
+        #region [IR Thermal Image Control]
+
+        /// <summary>
+        /// LA가 지원하는 열영상 이미지 조정 명령을 송신한다.
+        ///
+        /// Viewer는 LA 제어 Port(5001)로 Pelco-D 호환 명령을 보내고,
+        /// LA는 Thermal helper Port(6602)를 통해 실제 카메라로 전달한다.
+        /// </summary>
+        private bool SendIrImageControlCommand(
+            byte operation)
+        {
+            return SendCommand(
+                0x00,
+                0x31,
+                operation,
+                0x00);
+        }
+
+        /// <summary>
+        /// 열영상 Color Map 기능을 켜거나 끈다.
+        /// LA에는 별도의 Color Map ON/OFF 명령이 없으므로
+        /// ON은 Blue Red, OFF는 Black Hot Palette로 대응한다.
+        /// </summary>
+        public bool SetIrColorMapEnabled(
+            bool isEnabled)
+        {
+            return SelectIrPalette(
+                isEnabled
+                    ? (byte)0x03
+                    : (byte)0x00);
+        }
+
+        /// <summary>
+        /// LA 내부 Palette Index와 동기화하면서
+        /// 지정 Palette를 선택한다.
+        ///
+        /// LA의 F3 / F4 직접 선택 명령은 화면만 변경하고
+        /// 내부 Palette Index를 갱신하지 않으므로 사용하지 않는다.
+        /// 현재 Index에서 목표 Index까지 필요한 PREV / NEXT 명령만
+        /// 송신하여 반복 APPLY 시 색상이 계속 넘어가는 현상을 방지한다.
+        /// </summary>
+        public bool SelectIrPalette(
+            byte paletteIndex)
+        {
+            if (paletteIndex > 0x09)
+            {
+                return false;
+            }
+
+            lock (_irPaletteSync)
+            {
+                int targetIndex =
+                    paletteIndex;
+
+                if (_currentIrPaletteIndex ==
+                    targetIndex)
+                {
+                    return true;
+                }
+
+                int nextCount =
+                    (targetIndex -
+                     _currentIrPaletteIndex +
+                     IrPaletteCount) %
+                    IrPaletteCount;
+
+                int previousCount =
+                    (_currentIrPaletteIndex -
+                     targetIndex +
+                     IrPaletteCount) %
+                    IrPaletteCount;
+
+                bool useNext =
+                    nextCount <= previousCount;
+
+                int commandCount =
+                    useNext
+                        ? nextCount
+                        : previousCount;
+
+                byte operation =
+                    useNext
+                        ? (byte)0x0D
+                        : (byte)0x0E;
+
+                for (int index = 0;
+                     index < commandCount;
+                     index++)
+                {
+                    System.Threading.Thread.Sleep(
+                        75);
+
+                    if (!SendIrImageControlCommand(
+                            operation))
+                    {
+                        return false;
+                    }
+                }
+
+                _currentIrPaletteIndex =
+                    targetIndex;
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 열영상 다음 색상 Palette 전환.
+        /// Command2=0x31 / Data1=0x0D / Data2=0x00
+        /// </summary>
+        public bool SelectNextIrPalette()
+        {
+            return SendIrImageControlCommand(0x0D);
+        }
+
+        /// <summary>
+        /// 열영상 이전 색상 Palette 전환.
+        /// Command2=0x31 / Data1=0x0E / Data2=0x00
+        /// </summary>
+        public bool SelectPreviousIrPalette()
+        {
+            return SendIrImageControlCommand(0x0E);
+        }
+
+        /// <summary>
+        /// 열영상 NUC 잔열 보정을 요청한다.
+        /// </summary>
+        public bool RequestIrNuc()
+        {
+            return SendCommand(0x00, 0x31, 0x0F, 0x00);
+        }
+
+        /// <summary>
+        /// 열영상 흑백 Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrBlackHotPalette()
+        {
+            return SendIrImageControlCommand(0xF4);
+        }
+
+        /// <summary>
+        /// 열영상 흑백 역상 Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrWhiteHotPalette()
+        {
+            return SendIrImageControlCommand(0xF3);
+        }
+
+        /// <summary>
+        /// 열영상 Iron Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrIronPalette()
+        {
+            return SelectIrPalette(0x02);
+        }
+
+        /// <summary>
+        /// 열영상 Blue Red Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrBlueRedPalette()
+        {
+            return SelectIrPalette(0x03);
+        }
+
+        /// <summary>
+        /// 열영상 Medical Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrMedicalPalette()
+        {
+            return SelectIrPalette(0x04);
+        }
+
+        /// <summary>
+        /// 열영상 Purple Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrPurplePalette()
+        {
+            return SelectIrPalette(0x05);
+        }
+
+        /// <summary>
+        /// 열영상 Purple Yellow Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrPurpleYellowPalette()
+        {
+            return SelectIrPalette(0x06);
+        }
+
+        /// <summary>
+        /// 열영상 Dark Blue Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrDarkBluePalette()
+        {
+            return SelectIrPalette(0x07);
+        }
+
+        /// <summary>
+        /// 열영상 Cyan Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrCyanPalette()
+        {
+            return SelectIrPalette(0x08);
+        }
+
+        /// <summary>
+        /// 열영상 Rainbow Palette를 선택한다.
+        /// </summary>
+        public bool SelectIrRainbowPalette()
+        {
+            return SendIrImageControlCommand(0xF5);
+        }
+
+        #endregion
 
         /// <summary>
         /// 거리측정기 [1회] 측정 요청

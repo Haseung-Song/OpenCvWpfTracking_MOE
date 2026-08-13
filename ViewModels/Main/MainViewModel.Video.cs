@@ -1048,6 +1048,19 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                     try
                     {
+                        ThermalFireDetectionResult thermalResult =
+                            default(ThermalFireDetectionResult);
+
+                        if (streamName == "IR")
+                        {
+                            thermalResult =
+                                _thermalFireDetectionService.Process(
+                                    frame,
+                                    IsThermalFireDetectionEnabled,
+                                    ThermalHotThresholdRatio,
+                                    ThermalMinimumAreaRatio);
+                        }
+
                         /// <summary>
                         /// OpenCV Mat → WPF BitmapSource 변환
                         /// </summary>
@@ -1126,6 +1139,13 @@ namespace OpenCvWpfTracking.ViewModels.Main
                                     /// </summary>
                                     setImageAction(
                                         bitmap);
+
+                                    if (streamName == "IR" &&
+                                        thermalResult.StateChanged)
+                                    {
+                                        UpdateThermalFireCandidateState(
+                                            thermalResult.IsDetected);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
