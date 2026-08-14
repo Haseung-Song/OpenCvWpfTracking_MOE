@@ -1421,11 +1421,12 @@ namespace OpenCvWpfTracking.Services.Communication
         /// </summary>
         public bool RequestIrNuc()
         {
+            // 2026-08-14: NUC = Command2 0x31 / Data1 0x0F / Data2 0x00.
             return SendCommand(0x00, 0x31, 0x0F, 0x00);
         }
 
         /// <summary>
-        /// 열영상 흑백 Palette를 선택한다.
+        /// 열영상 BLACK HOT(흑백 역상) Palette를 선택한다.
         /// </summary>
         public bool SelectIrBlackHotPalette()
         {
@@ -1433,7 +1434,7 @@ namespace OpenCvWpfTracking.Services.Communication
         }
 
         /// <summary>
-        /// 열영상 흑백 역상 Palette를 선택한다.
+        /// 열영상 WHITE HOT(일반 흑백) Palette를 선택한다.
         /// </summary>
         public bool SelectIrWhiteHotPalette()
         {
@@ -1501,6 +1502,7 @@ namespace OpenCvWpfTracking.Services.Communication
         /// </summary>
         public bool SelectIrRainbowPalette()
         {
+            // 2026-08-14: RAINBOW direct selection = 0xF5.
             return SendIrImageControlCommand(0xF5);
         }
 

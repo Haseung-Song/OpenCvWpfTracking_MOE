@@ -14,5 +14,8 @@ namespace OpenCvWpfTracking.Services.Communication.WebAgent
         public bool SelectBlackHot() => _controlCommandService.SelectIrBlackHotPalette();
         public bool SelectWhiteHot() => _controlCommandService.SelectIrWhiteHotPalette();
         public bool SelectRainbow() => _controlCommandService.SelectIrRainbowPalette();
+
+        // 2026-08-14: Route the documented NUC command through the same Web Agent path.
+        public bool RequestNuc() => _controlCommandService.RequestIrNuc();
     }
 }
