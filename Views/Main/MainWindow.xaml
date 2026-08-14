@@ -2011,75 +2011,28 @@
                                                             BorderBrush="#76818B"
                                                             BorderThickness="1"
                                                             Padding="9">
-                                                        <Grid>
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="70"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                            </Grid.ColumnDefinitions>
-
-                                                            <TextBlock Grid.Row="0"
-                                                                       Text="POWER"
-                                                                       Foreground="#D0D7DE"
-                                                                       FontWeight="Bold"
-                                                                       HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center"
-                                                                       Margin="0,2,0,2"/>
-                                                            <TextBlock Grid.Column="1"
-                                                                       FontSize="10.5"
-                                                                       FontWeight="Bold"
-                                                                       HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center"
-                                                                       TextAlignment="Center"
-                                                                       Margin="4,2,4,2">
-
-                                                                <Run Text="TCP:"
-                                                                     Foreground="#4FD1C5"/>
-
-                                                                <Run Text="{Binding CurrentControlPowerText,
-                                                                             Mode=OneWay}"
-                                                                     Foreground="#9FE870"/>
-
-                                                                <Run Text=" / "
-                                                                     Foreground="#D0D7DE"/>
-
-                                                                <Run Text="EO:"
-                                                                     Foreground="#7DD3FC"/>
-
-                                                                <Run Text="{Binding CurrentEoPowerText,
-                                                                             Mode=OneWay}"
-                                                                     Foreground="#9FE870"/>
-
-                                                                <Run Text=" / "
-                                                                     Foreground="#D0D7DE"/>
-
-                                                                <Run Text="IR:"
-                                                                     Foreground="#C4B5FD"/>
-
-                                                                <Run Text="{Binding CurrentIrPowerText,
-                                                                             Mode=OneWay}"
-                                                                     Foreground="#9FE870"/>
-
-                                                                <Run Text=" / "
-                                                                     Foreground="#D0D7DE"/>
-
-                                                                <Run Text="AI:"
-                                                                     Foreground="#FFD166"/>
-
-                                                                <Run Text="{Binding AiPowerStatusText,
-                                                                             Mode=OneWay}"
-                                                                     Foreground="#9FE870"/>
-
-                                                                <Run Text=" / "
-                                                                     Foreground="#D0D7DE"/>
-
-                                                                <Run Text="FIRE:"
-                                                                     Foreground="#FF8A80"/>
-
-                                                                <Run Text="{Binding FirePowerStatusText,
-                                                                             Mode=OneWay}"
-                                                                     Foreground="#9FE870"/>
-                                                            </TextBlock>
-                                                        </Grid>
+                                                        <TextBlock FontSize="10.5"
+                                                                   FontWeight="Bold"
+                                                                   HorizontalAlignment="Center"
+                                                                   TextAlignment="Center"
+                                                                   VerticalAlignment="Center">
+                                                            <Run Text="POWER" Foreground="#D0D7DE"/>
+                                                            <Run Text=" / " Foreground="#D0D7DE"/>
+                                                            <Run Text="TCP:" Foreground="#4FD1C5"/>
+                                                            <Run Text="{Binding CurrentControlPowerText, Mode=OneWay}" Foreground="#9FE870"/>
+                                                            <Run Text=" / " Foreground="#D0D7DE"/>
+                                                            <Run Text="EO:" Foreground="#7DD3FC"/>
+                                                            <Run Text="{Binding CurrentEoPowerText, Mode=OneWay}" Foreground="#9FE870"/>
+                                                            <Run Text=" / " Foreground="#D0D7DE"/>
+                                                            <Run Text="IR:" Foreground="#C4B5FD"/>
+                                                            <Run Text="{Binding CurrentIrPowerText, Mode=OneWay}" Foreground="#9FE870"/>
+                                                            <Run Text=" / " Foreground="#D0D7DE"/>
+                                                            <Run Text="AI:" Foreground="#A9D6E5"/>
+                                                            <Run Text="{Binding AiPowerStatusText, Mode=OneWay}" Foreground="#9FE870"/>
+                                                            <Run Text=" / " Foreground="#D0D7DE"/>
+                                                            <Run Text="FIRE:" Foreground="#A9D6E5"/>
+                                                            <Run Text="{Binding FirePowerStatusText, Mode=OneWay}" Foreground="#9FE870"/>
+                                                        </TextBlock>
 
                                                     </Border>
                                                 </StackPanel>
