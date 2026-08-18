@@ -126,6 +126,21 @@ namespace OpenCvWpfTracking
         /// </summary>
         protected override void OnStartup(StartupEventArgs e)
         {
+            Environment.SetEnvironmentVariable(
+                "OPENCV_OPENCL_RUNTIME",
+                "disabled",
+                EnvironmentVariableTarget.Process);
+
+            Environment.SetEnvironmentVariable(
+                "OPENCV_OPENCL_DEVICE",
+                "disabled",
+                EnvironmentVariableTarget.Process);
+
+            Environment.SetEnvironmentVariable(
+                "OPENCV_OPENCL_CACHE_ENABLE",
+                "0",
+                EnvironmentVariableTarget.Process);
+
             /// <summary>
             /// [OpenCV] [FFmpeg] 디버그 로그 출력 비활성화
             /// </summary>
@@ -139,6 +154,8 @@ namespace OpenCvWpfTracking
             Environment.SetEnvironmentVariable("OPENCV_LOG_LEVEL", "ERROR");
 
             base.OnStartup(e);
+
+            AppLogger.Initialize();
 
             InitializeFFmpeg();
 
@@ -251,10 +268,11 @@ namespace OpenCvWpfTracking
             /// [Debug] 콘솔 창 해제
             /// </summary>
             FreeConsole();
+#endif
+
+            AppLogger.Shutdown();
 
             base.OnExit(e);
-
-#endif
 
         }
         #endregion
