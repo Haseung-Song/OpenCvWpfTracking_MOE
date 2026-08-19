@@ -4067,6 +4067,27 @@
                                                    HorizontalAlignment="Center"
                                                    Margin="0,8,0,0"/>
 
+                                        <TextBlock Text="Panorama PT speed is fixed at 15 for stable positioning and reduced stitching parallax."
+                                                   Foreground="#F6E05E"
+                                                   FontSize="10.5"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="360"
+                                                   Margin="0,5,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPanoramaCaptureRunning}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
                                         <Button Content="STOP AUTO SCAN"
                                                 Command="{Binding StopActivePresetScanCommand}"
                                                 Width="180"
