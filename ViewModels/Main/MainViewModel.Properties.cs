@@ -1,4 +1,4 @@
-﻿using OpenCvWpfTracking.Models.AI;
+using OpenCvWpfTracking.Models.AI;
 using OpenCvWpfTracking.Models.Main;
 using System;
 using System.Collections.ObjectModel;
@@ -2068,6 +2068,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 OnPropertyChanged(
                     nameof(CrosshairButtonText));
             }
+
         }
 
         public string CrosshairColorName
@@ -2087,6 +2088,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 return colorNames[_crosshairColorIndex];
             }
+
         }
 
         /// <summary>
@@ -2657,6 +2659,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             }
 
         }
+        /// <summary>
+        /// ToOnOff 동작 수행 함수.
+        /// </summary>
         private static string ToOnOff(
             bool isOn)
         {

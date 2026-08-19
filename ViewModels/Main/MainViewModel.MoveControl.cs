@@ -1,4 +1,4 @@
-﻿using OpenCvWpfTracking.Common;
+using OpenCvWpfTracking.Common;
 using OpenCvWpfTracking.Models.Main;
 using OpenCvWpfTracking.Services.Control;
 using System;
@@ -514,6 +514,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 $"RESULT={panResult && tiltResult}");
         }
 
+        /// <summary>
+        /// MovePanAbsoluteFromInputAsync 이동 함수.
+        /// </summary>
         private Task MovePanAbsoluteFromInputAsync()
         {
             if (!PanAbsoluteValue.HasValue)
@@ -846,6 +849,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     moveCts.Dispose();
                 }
+
             }
 
             Console.WriteLine();
@@ -1083,6 +1087,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         return false;
                     }
+
                 }
 
                 bool settled =
@@ -1097,6 +1102,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     return true;
                 }
+
             }
 
             double finalPanDelta =
@@ -1229,6 +1235,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         stationaryCount++;
                     }
+
                 }
 
                 previousPan =
@@ -1259,6 +1266,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     return false;
                 }
+
             }
 
             return false;
@@ -1332,6 +1340,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             return difference;
         }
 
+        /// <summary>
+        /// ParsePresetPosition 데이터 해석 함수.
+        /// </summary>
         private static int ParsePresetPosition(
             string text,
             int fallback)
@@ -1379,6 +1390,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                        standardTarget) <= 1;
         }
 
+        /// <summary>
+        /// IsPresetEoFocusAtTarget 상태 확인 함수.
+        /// </summary>
         private bool IsPresetEoFocusAtTarget(
             int standardTarget)
         {
@@ -1802,6 +1816,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 newPreset;
         }
 
+        /// <summary>
+        /// ClearAllLaPresetPoints 동작 수행 함수.
+        /// </summary>
         private void ClearAllLaPresetPoints()
         {
             StopLaPresetScan();
@@ -2047,6 +2064,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 $"ACTUAL={actualDelaySeconds:F3}s");
         }
 
+        /// <summary>
+        /// UpdateLaPresetScan 갱신 함수.
+        /// </summary>
         private void UpdateLaPresetScan()
         {
             int speed =
@@ -2078,6 +2098,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 $"DELAY={delay}s NEXT START";
         }
 
+        /// <summary>
+        /// StopLaPresetScan 중지 함수.
+        /// </summary>
         private void StopLaPresetScan()
         {
             ConsoleLogHelper.Command(
@@ -2166,6 +2189,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                            safeSpeed);
         }
 
+        /// <summary>
+        /// AddOrUpdatePresetPoint 동작 수행 함수.
+        /// </summary>
         private void AddOrUpdatePresetPoint()
         {
             ConsoleLogHelper.Command(
@@ -2400,6 +2426,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     moveCts.Dispose();
                 }
+
             }
 
             Console.WriteLine();
@@ -2768,6 +2795,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 StopPresetScan();
             }
+
         }
 
         /// <summary>

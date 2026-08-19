@@ -1,4 +1,4 @@
-﻿using OpenCvWpfTracking.Common;
+using OpenCvWpfTracking.Common;
 using System;
 
 namespace OpenCvWpfTracking.Services.Communication
@@ -46,6 +46,9 @@ namespace OpenCvWpfTracking.Services.Communication
         /// </summary>
         private readonly byte _unitId = 0x01;
 
+        /// <summary>
+        /// ControlCommandService 동작 수행 함수.
+        /// </summary>
         public ControlCommandService(TcpClientService tcpClientService)
         {
             _tcpClientService = tcpClientService;
@@ -336,6 +339,9 @@ namespace OpenCvWpfTracking.Services.Communication
                 data2);
         }
 
+        /// <summary>
+        /// NormalizeLaPresetId 동작 수행 함수.
+        /// </summary>
         private static ushort NormalizeLaPresetId(
             ushort presetId)
         {
@@ -344,6 +350,9 @@ namespace OpenCvWpfTracking.Services.Communication
                 : presetId;
         }
 
+        /// <summary>
+        /// NormalizePresetPosition 동작 수행 함수.
+        /// </summary>
         private static ushort NormalizePresetPosition(
             ushort position)
         {
@@ -573,6 +582,9 @@ namespace OpenCvWpfTracking.Services.Communication
                 (byte)(speedValue & 0xFF));
         }
 
+        /// <summary>
+        /// ConvertPositionSpeed 생성 및 변환 함수.
+        /// </summary>
         private static ushort ConvertPositionSpeed(
             double speedDegreesPerSecond)
         {
@@ -1389,6 +1401,7 @@ namespace OpenCvWpfTracking.Services.Communication
                     {
                         return false;
                     }
+
                 }
 
                 _currentIrPaletteIndex =
@@ -1396,6 +1409,7 @@ namespace OpenCvWpfTracking.Services.Communication
 
                 return true;
             }
+
         }
 
         /// <summary>

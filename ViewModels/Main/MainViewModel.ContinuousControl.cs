@@ -1,4 +1,4 @@
-﻿using OpenCvWpfTracking.Common;
+using OpenCvWpfTracking.Common;
 using OpenCvWpfTracking.Models.Main;
 using System;
 using System.Threading;
@@ -2057,6 +2057,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                                     activeEoCtecSource,
                                     stopOperationGeneration);
                             }
+
                         }
                         else
                         {

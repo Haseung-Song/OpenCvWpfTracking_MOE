@@ -1,4 +1,4 @@
-﻿using OpenCvSharp;
+using OpenCvSharp;
 using OpenCvWpfTracking.Common;
 using OpenCvWpfTracking.Converters;
 using OpenCvWpfTracking.Services.Video;
@@ -1155,6 +1155,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                                         UpdateThermalFireCandidateState(
                                             thermalResult.IsDetected);
                                     }
+
                                 }
                                 catch (Exception ex)
                                 {

@@ -1,4 +1,4 @@
-﻿using OpenCvWpfTracking.Common;
+using OpenCvWpfTracking.Common;
 using OpenCvWpfTracking.Services.Video;
 using System.Windows.Media;
 using System.Windows.Input;
@@ -68,6 +68,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         ? "Experimental candidate detection enabled"
                         : "Experimental candidate detection disabled");
             }
+
         }
 
         public double ThermalHotThresholdRatio
@@ -90,6 +91,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 _thermalHotThresholdRatio = normalized;
                 OnPropertyChanged();
             }
+
         }
 
         public double ThermalMinimumAreaRatio
@@ -112,6 +114,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 _thermalMinimumAreaRatio = normalized;
                 OnPropertyChanged();
             }
+
         }
 
         public string FirePowerStatusText =>
@@ -119,6 +122,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 ? "ON"
                 : "OFF";
 
+        /// <summary>
+        /// InitializeThermalFeatures 초기화 함수.
+        /// </summary>
         private void InitializeThermalFeatures()
         {
             PreviousThermalPaletteCommand =
@@ -149,6 +155,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 new RelayCommand(() => SetThermalFireBoxGroupingMode(2));
         }
 
+        /// <summary>
+        /// SetThermalFireBoxGroupingMode 설정 함수.
+        /// </summary>
         private void SetThermalFireBoxGroupingMode(int mode)
         {
             _thermalFireBoxGroupingMode = mode == 1 ? 1 : 2;
@@ -196,6 +205,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         ResetThermalPaletteButtonVisuals();
                     }
+
                 }
                 return;
             }
@@ -220,9 +230,14 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     ResetThermalPaletteButtonVisuals();
                 }
+
             }
+
         }
 
+        /// <summary>
+        /// SendThermalPaletteDirectCommand 송신 함수.
+        /// </summary>
         private void SendThermalPaletteDirectCommand(string paletteName, int paletteType)
         {
             // 2026-08-14: MOE routes ENVIRONMENT through Web Agent and local equipment directly.
@@ -240,8 +255,12 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 UpdateThermalPaletteButtonVisual(paletteType);
             }
+
         }
 
+        /// <summary>
+        /// InitializeThermalBlackHotAfterDeviceConnected 초기화 함수.
+        /// </summary>
         private void InitializeThermalBlackHotAfterDeviceConnected()
         {
             // 2026-08-14: Always reset the retained IR palette when a new device
@@ -249,6 +268,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             SendThermalPaletteDirectCommand("INITIAL BLACK HOT", 0);
         }
 
+        /// <summary>
+        /// SendThermalNucCommand 송신 함수.
+        /// </summary>
         private void SendThermalNucCommand()
         {
             // 2026-08-14: Explicit delegate assignment is compatible with C# 7.3.
@@ -264,6 +286,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             SendThermalCommand("NUC", sendCommand);
         }
 
+        /// <summary>
+        /// UpdateThermalPaletteButtonVisual 갱신 함수.
+        /// </summary>
         private void UpdateThermalPaletteButtonVisual(int paletteType)
         {
             ResetThermalPaletteButtonVisuals();
@@ -287,8 +312,12 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 ThermalRainbowButtonBackground = rainbow;
                 ThermalRainbowButtonForeground = Brushes.White;
             }
+
         }
 
+        /// <summary>
+        /// ResetThermalPaletteButtonVisuals 동작 수행 함수.
+        /// </summary>
         private void ResetThermalPaletteButtonVisuals()
         {
             Brush neutralForeground = new SolidColorBrush(Color.FromRgb(32, 38, 45));
@@ -300,6 +329,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             ThermalRainbowButtonForeground = neutralForeground;
         }
 
+        /// <summary>
+        /// LogThermalControlCommandResult 동작 수행 함수.
+        /// </summary>
         private static void LogThermalControlCommandResult(
             string commandName,
             bool result)
@@ -318,8 +350,12 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     "CONTROL AGENT TCP WRITE FAILED / COMMAND=" +
                     commandName);
             }
+
         }
 
+        /// <summary>
+        /// SendThermalCommand 송신 함수.
+        /// </summary>
         private static void SendThermalCommand(
             string commandName,
             System.Func<bool> sendCommand)
@@ -342,8 +378,12 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     "CONTROL AGENT TCP WRITE FAILED / COMMAND=" +
                     commandName);
             }
+
         }
 
+        /// <summary>
+        /// UpdateThermalFireCandidateState 갱신 함수.
+        /// </summary>
         private void UpdateThermalFireCandidateState(
             bool isDetected)
         {
@@ -355,5 +395,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             _isThermalFireCandidateDetected = isDetected;
             OnPropertyChanged(nameof(FirePowerStatusText));
         }
+
     }
+
 }

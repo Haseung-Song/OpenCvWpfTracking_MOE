@@ -4,6 +4,9 @@ namespace OpenCvWpfTracking.Services.Communication.WebAgent
     {
         private readonly ControlCommandService _controlCommandService;
 
+        /// <summary>
+        /// WebAgentThermalPaletteService 동작 수행 함수.
+        /// </summary>
         public WebAgentThermalPaletteService(ControlCommandService controlCommandService)
         {
             _controlCommandService = controlCommandService;
@@ -18,4 +21,5 @@ namespace OpenCvWpfTracking.Services.Communication.WebAgent
         // 2026-08-14: Route the documented NUC command through the same Web Agent path.
         public bool RequestNuc() => _controlCommandService.RequestIrNuc();
     }
+
 }
