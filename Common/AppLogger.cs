@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using Serilog;
 using Serilog.Events;
@@ -46,14 +46,14 @@ namespace OpenCvWpfTracking.Common
                         LogEventLevel.Warning)
                     .WriteTo.Debug(
                         outputTemplate:
-                        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}{NewLine}")
                     .WriteTo.File(
                         logFilePath,
                         rollingInterval: RollingInterval.Day,
                         retainedFileCountLimit: 30,
                         shared: true,
                         outputTemplate:
-                        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}{NewLine}")
                     .CreateLogger();
 
             _isInitialized =
