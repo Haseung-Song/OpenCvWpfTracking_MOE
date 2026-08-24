@@ -14,7 +14,7 @@ namespace OpenCvWpfTracking.Services.Video
     /// </summary>
     internal sealed class ThermalFireDetectionService
     {
-        private const int ConfirmFrameCount = 6;
+        private const int ConfirmFrameCount = 4;
         private const int ClearFrameCount = 8;
 
         private int _candidateFrameCount;
@@ -43,7 +43,12 @@ namespace OpenCvWpfTracking.Services.Video
                 (int)Math.Round(Math.Max(0, Math.Min(1, hotThresholdRatio)) * 255);
 
             double frameArea = frame.Width * frame.Height;
-            double minimumArea = Math.Max(64, frameArea * minimumAreaRatio);
+            // 2026-08-21: 10~30 px 화염은 Bounding Box 한 변 기준이다.
+            // 24 px contour부터 확인하되, 36 px보다 큰 후보에는 기존
+            // 화면비 기반 최소 면적을 그대로 적용한다.
+            double configuredMinimumArea =
+                Math.Max(64, frameArea * minimumAreaRatio);
+            double minimumArea = 24;
             // 2026-08-14: Large flames may occupy most of the frame.
             double maximumArea = frameArea * 0.95;
 
@@ -108,9 +113,31 @@ namespace OpenCvWpfTracking.Services.Video
                     double fillRatio = area / rectangleArea;
                     double aspectRatio = rect.Width / (double)Math.Max(1, rect.Height);
                     double rectangleAreaRatio = rectangleArea / frameArea;
+                    bool isSmallFireCandidate =
+                        rect.Width <= 36 &&
+                        rect.Height <= 36 &&
+                        rectangleArea <= 1296;
+                    if (!isSmallFireCandidate &&
+                        area < configuredMinimumArea)
+                    {
+                        continue;
+                    }
+
                     Point[] convexHull = Cv2.ConvexHull(contour);
                     double hullArea = Math.Max(1.0, Cv2.ContourArea(convexHull));
                     double solidity = area / hullArea;
+                    double perimeter = Math.Max(1.0, Cv2.ArcLength(contour, true));
+                    double irregularity =
+                        perimeter * perimeter /
+                        Math.Max(1.0, 4.0 * Math.PI * area);
+                    // 2026-08-24: 큰 세로형·불규칙 화염은 낮은 프레임 차로 인해
+                    // 누락시키지 않는다. 작은 전등은 기존 시간축 검사 대상이다.
+                    bool isStrongLargeFireCandidate =
+                        rectangleAreaRatio >= 0.0015 &&
+                        rect.Height >= Math.Max(32, frame.Height * 0.04) &&
+                        aspectRatio >= 0.08 && aspectRatio <= 1.60 &&
+                        fillRatio >= 0.025 &&
+                        (irregularity >= 1.20 || solidity <= 0.92);
                     double motionRatio = 1.0;
                     if (hasMotionReference)
                     {
@@ -121,12 +148,16 @@ namespace OpenCvWpfTracking.Services.Video
 
                     }
 
-                    // 2026-08-14: Reject static/wide hot surfaces and camera-wide motion.
+                    // 2026-08-24: 작은 정적 전등도 시간축 검사를 우회하지 않는다.
+                    // 실제 10~30 px 화염은 낮은 움직임 임계값으로 보존한다.
                     if (fillRatio < 0.005 ||
                         (rectangleAreaRatio > 0.75 && fillRatio > 0.30) ||
                         (rectangleAreaRatio > 0.08 && aspectRatio > 2.2 &&
                          fillRatio > 0.18 && solidity > 0.72) ||
-                        (hasMotionReference && (globalMotionRatio > 0.35 || motionRatio < 0.012)) ||
+                        (!isStrongLargeFireCandidate &&
+                         (!hasMotionReference ||
+                         globalMotionRatio > 0.25 ||
+                         motionRatio < (isSmallFireCandidate ? 0.004 : 0.010))) ||
                         aspectRatio < 0.05 || aspectRatio > 20.0)
                     {
                         continue;
@@ -200,7 +231,9 @@ namespace OpenCvWpfTracking.Services.Video
                 return new ThermalFireDetectionResult(
                     _isFireCandidateDetected,
                     previousState != _isFireCandidateDetected,
-                    selectedArea);
+                    selectedArea,
+                    selectedRect,
+                    mergedRects.Count);
             }
 
         }
@@ -230,9 +263,11 @@ namespace OpenCvWpfTracking.Services.Video
                     ExpandRect(unified, 4, 4, frameWidth, frameHeight)
                 };
             }
-            // 2026-08-14: Merge separated tongues belonging to the same fire.
+            // 2026-08-21: 실제 IR에서도 큰 화염 내부 조각을 대표 BBox 하나로 병합한다.
             int horizontalGap = Math.Max(6, frameWidth / 120);
             int verticalGap = Math.Max(8, frameHeight / 100);
+            merged.Sort((left, right) =>
+                (right.Width * right.Height).CompareTo(left.Width * left.Height));
 
             bool changed;
 
@@ -242,10 +277,14 @@ namespace OpenCvWpfTracking.Services.Video
 
                 for (int first = 0; first < merged.Count && !changed; first++)
                 {
+                    int fragmentHorizontalGap =
+                        Math.Max(horizontalGap, (int)Math.Round(merged[first].Width * 0.45));
+                    int fragmentVerticalGap =
+                        Math.Max(verticalGap, (int)Math.Round(merged[first].Height * 0.75));
                     Rect expandedFirst = ExpandRect(
                         merged[first],
-                        horizontalGap,
-                        verticalGap,
+                        fragmentHorizontalGap,
+                        fragmentVerticalGap,
                         frameWidth,
                         frameHeight);
 
@@ -287,15 +326,63 @@ namespace OpenCvWpfTracking.Services.Video
         /// </summary>
         private static void DrawDetectionBox(Mat frame, Rect rect)
         {
-            Cv2.Rectangle(frame, rect, new Scalar(0, 0, 255), 3);
+            double displayScale =
+                Math.Max(
+                    1.0,
+                    Math.Max(
+                        frame.Width / 1280.0,
+                        frame.Height / 720.0));
+            int lineThickness =
+                Math.Max(3, (int)Math.Round(2.0 * displayScale));
+            Rect displayRect =
+                CreateVisibleDetectionRect(
+                    rect,
+                    frame.Width,
+                    frame.Height,
+                    displayScale);
+
+            Cv2.Rectangle(
+                frame,
+                displayRect,
+                new Scalar(0, 0, 255),
+                lineThickness);
             Cv2.PutText(
                 frame,
                 "FIRE DETECTION",
-                new Point(rect.X, Math.Max(24, rect.Y - 8)),
+                new Point(
+                    displayRect.X,
+                    Math.Max(
+                        (int)Math.Round(28 * displayScale),
+                        displayRect.Y - (int)Math.Round(8 * displayScale))),
                 HersheyFonts.HersheySimplex,
-                0.8,
+                Math.Max(0.8, 0.8 * displayScale),
                 new Scalar(0, 0, 255),
-                2);
+                Math.Max(2, (int)Math.Round(1.5 * displayScale)));
+        }
+
+        /// <summary>
+        /// 4K 영상의 10~30px 후보가 축소 화면에서도 사라지지 않도록
+        /// 표시용 사각형에만 최소 크기를 적용한다. 실제 BBox 수치는 유지한다.
+        /// </summary>
+        private static Rect CreateVisibleDetectionRect(
+            Rect source,
+            int frameWidth,
+            int frameHeight,
+            double displayScale)
+        {
+            int minimumSide =
+                Math.Max(28, (int)Math.Round(24 * displayScale));
+            int targetWidth = Math.Max(source.Width, minimumSide);
+            int targetHeight = Math.Max(source.Height, minimumSide);
+            int centerX = source.X + source.Width / 2;
+            int centerY = source.Y + source.Height / 2;
+            int x = Math.Max(0, centerX - targetWidth / 2);
+            int y = Math.Max(0, centerY - targetHeight / 2);
+
+            targetWidth = Math.Min(targetWidth, frameWidth - x);
+            targetHeight = Math.Min(targetHeight, frameHeight - y);
+
+            return new Rect(x, y, targetWidth, targetHeight);
         }
 
         /// <summary>
@@ -408,9 +495,11 @@ namespace OpenCvWpfTracking.Services.Video
                     Cv2.Threshold(grayscale, darkIntensityMask, 255 - threshold, 255, ThresholdTypes.BinaryInv);
                     Cv2.BitwiseAnd(brightIntensityMask, brightContrastMask, brightIntensityMask);
                     Cv2.BitwiseAnd(darkIntensityMask, darkContrastMask, darkIntensityMask);
-                    Mat intensityMask = Cv2.CountNonZero(brightIntensityMask) <= Cv2.CountNonZero(darkIntensityMask)
-                        ? brightIntensityMask.Clone()
-                        : darkIntensityMask.Clone();
+                    Mat intensityMask = new Mat();
+                    Cv2.BitwiseOr(
+                        brightIntensityMask,
+                        darkIntensityMask,
+                        intensityMask);
                     brightIntensityMask.Dispose();
                     darkIntensityMask.Dispose();
                     return intensityMask;
@@ -429,7 +518,9 @@ namespace OpenCvWpfTracking.Services.Video
                     Mat combinedMask = new Mat();
                     Cv2.BitwiseOr(redLow, redHigh, combinedMask);
                     Cv2.BitwiseOr(combinedMask, orange, combinedMask);
-                    Cv2.BitwiseAnd(combinedMask, contrastMask, combinedMask);
+                    // White/Black Hot 및 색상 팔레트의 상대 Hotspot을 모두
+                    // 유지하고 이후 움직임·지속성 단계에서 오탐을 제거한다.
+                    Cv2.BitwiseOr(combinedMask, contrastMask, combinedMask);
                     return combinedMask;
                 }
 
@@ -472,7 +563,7 @@ namespace OpenCvWpfTracking.Services.Video
                 ConsoleLogHelper.State(
                     "THERMAL FIRE",
                     _isFireCandidateDetected
-                        ? "Candidate confirmed / PERSISTENCE=6 frames"
+                        ? "Candidate confirmed / PERSISTENCE=4 frames"
                         : "Candidate cleared / PERSISTENCE=8 frames");
             }
 
@@ -494,7 +585,12 @@ namespace OpenCvWpfTracking.Services.Video
             }
             _previousGray = new Mat();
 
-            return new ThermalFireDetectionResult(false, changed, 0);
+            return new ThermalFireDetectionResult(
+                false,
+                changed,
+                0,
+                Rect.Empty,
+                0);
         }
 
     }
@@ -507,16 +603,22 @@ namespace OpenCvWpfTracking.Services.Video
         internal ThermalFireDetectionResult(
             bool isDetected,
             bool stateChanged,
-            double candidateArea)
+            double candidateArea,
+            Rect candidateRect,
+            int candidateCount)
         {
             IsDetected = isDetected;
             StateChanged = stateChanged;
             CandidateArea = candidateArea;
+            CandidateRect = candidateRect;
+            CandidateCount = candidateCount;
         }
 
         internal bool IsDetected { get; }
         internal bool StateChanged { get; }
         internal double CandidateArea { get; }
+        internal Rect CandidateRect { get; }
+        internal int CandidateCount { get; }
     }
 
 }

@@ -61,6 +61,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 _isThermalFireDetectionEnabled = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(FirePowerStatusText));
+                OnPropertyChanged(nameof(FireAlertStatusText));
 
                 ConsoleLogHelper.State(
                     "THERMAL FIRE",
@@ -385,15 +386,18 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// UpdateThermalFireCandidateState 갱신 함수.
         /// </summary>
         private void UpdateThermalFireCandidateState(
-            bool isDetected)
+            ThermalFireDetectionResult result)
         {
-            if (_isThermalFireCandidateDetected == isDetected)
+            if (_isThermalFireCandidateDetected == result.IsDetected)
             {
                 return;
             }
 
-            _isThermalFireCandidateDetected = isDetected;
+            _isThermalFireCandidateDetected = result.IsDetected;
             OnPropertyChanged(nameof(FirePowerStatusText));
+            OnPropertyChanged(nameof(FireAlertStatusText));
+
+            UpdateFireEvent(result);
         }
 
     }

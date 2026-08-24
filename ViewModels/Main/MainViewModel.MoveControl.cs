@@ -2195,7 +2195,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private void AddOrUpdatePresetPoint()
         {
             ConsoleLogHelper.Command(
-                "PRESET",
+                "PRESET W",
                 "Set preset requested");
 
             int presetNumber =
@@ -2395,7 +2395,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 panTiltSettled =
                     moveResult &&
                     await EnsurePresetPanTiltTargetAsync(
-                        "PRESET",
+                        "PRESET W",
                         SelectedPresetPoint,
                         () =>
                             ApplyPresetPositionSpeed(
@@ -2458,7 +2458,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private void StartPresetScan()
         {
             ConsoleLogHelper.Command(
-                "PRESET",
+                "PRESET W",
                 "Loop start requested");
 
             if (PresetPoints.Count <= 0)
@@ -2593,7 +2593,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                         bool panTiltSettled =
                             await EnsurePresetPanTiltTargetAsync(
-                                "PRESET",
+                                "PRESET W",
                                 preset,
                                 () =>
                                     ApplyPresetPositionSpeed(
@@ -2612,7 +2612,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                                 $"P{preset.Number:00} PAN/TILT SETTLE INCOMPLETE";
 
                             ConsoleLogHelper.Warning(
-                                "PRESET",
+                                "PRESET W",
                                 $"Loop continuing after settle limit / " +
                                 $"P{preset.Number:00}");
                         }
@@ -2717,7 +2717,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private void StopPresetScan()
         {
             ConsoleLogHelper.Command(
-                "PRESET",
+                "PRESET W",
                 "Auto scan stop requested / CMD2=0x9B");
 
             bool hadRunningLoop =
@@ -2773,10 +2773,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     .StopPanTiltPositionMove();
 
             PresetCommandStatusText =
-                "PRESET MOVE STOPPED";
+                "PRESET W MOVE STOPPED";
 
             ConsoleLogHelper.Command(
-                "PRESET",
+                "PRESET W",
                 $"Single move stop / CMD2=0x4F / RESULT={stopResult}");
         }
 
