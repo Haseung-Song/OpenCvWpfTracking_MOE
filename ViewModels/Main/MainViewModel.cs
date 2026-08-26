@@ -1132,7 +1132,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// <summary>
         /// [AI Detector Agent] 연결 [IP]
         /// </summary>
-        private string _aiControlAgentIp = "192.168.20.160";
+        // 2026-08-25: AI Detector 운영 서버 기본 주소를 192.168.20.165로 변경한다. (Port 5055 유지)
+        private string _aiControlAgentIp = "192.168.20.165";
 
         /// <summary>
         /// [AI Detector Agent] 연결 [Port]

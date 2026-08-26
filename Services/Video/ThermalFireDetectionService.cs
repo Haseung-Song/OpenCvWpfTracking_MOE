@@ -21,13 +21,54 @@ namespace OpenCvWpfTracking.Services.Video
         private int _clearFrameCount;
         private bool _isFireCandidateDetected;
         private Rect _trackedCandidateRect = Rect.Empty;
+        // 2026-08-25: REI/MOE가 동일한 화재 후보 알고리즘과 오류 처리 정책을
+        // 사용하도록 공통화하였다. 반복 오류 로그는 5초 간격으로 제한한다.
+        private DateTime _lastProcessErrorLogTime = DateTime.MinValue;
         // 2026-08-14: Static hot roofs/ground are rejected using inter-frame motion.
         private Mat _previousGray = new Mat();
+        // 2026-08-18: 팔레트상 계속 붉게 보이는 건물/지면과 실제로 형상이
+        // 흔들리는 화염을 구분하기 위한 직전 후보 마스크이다.
+        private Mat _previousCandidateMask = new Mat();
 
         /// <summary>
         /// Process 처리 함수.
         /// </summary>
         internal ThermalFireDetectionResult Process(
+            Mat frame,
+            bool isEnabled,
+            double hotThresholdRatio,
+            double minimumAreaRatio,
+            int fireBoxGroupingMode)
+        {
+            try
+            {
+                return ProcessCore(
+                    frame,
+                    isEnabled,
+                    hotThresholdRatio,
+                    minimumAreaRatio,
+                    fireBoxGroupingMode);
+            }
+            catch (Exception ex)
+            {
+                DateTime now = DateTime.Now;
+                if ((now - _lastProcessErrorLogTime).TotalSeconds >= 5)
+                {
+                    _lastProcessErrorLogTime = now;
+                    ConsoleLogHelper.Error(
+                        "THERMAL FIRE",
+                        "Candidate processing failed / " + ex.Message);
+                }
+
+                return ResetDetectionState();
+            }
+
+        }
+
+        /// <summary>
+        /// 2026-08-25 REI/MOE 공통 화재 후보 판정 본체.
+        /// </summary>
+        private ThermalFireDetectionResult ProcessCore(
             Mat frame,
             bool isEnabled,
             double hotThresholdRatio,
@@ -43,17 +84,18 @@ namespace OpenCvWpfTracking.Services.Video
                 (int)Math.Round(Math.Max(0, Math.Min(1, hotThresholdRatio)) * 255);
 
             double frameArea = frame.Width * frame.Height;
-            // 2026-08-21: 10~30 px 화염은 Bounding Box 한 변 기준이다.
-            // 24 px contour부터 확인하되, 36 px보다 큰 후보에는 기존
-            // 화면비 기반 최소 면적을 그대로 적용한다.
+            // 2026-08-21: 10~30 px 화염은 Bounding Box 한 변의 크기를 뜻한다.
+            // 면적은 대략 100~900 px이므로 화면비 기반 최소값과 별도로
+            // 24 px contour부터 검증하는 Small Fire lane을 유지한다.
             double configuredMinimumArea =
                 Math.Max(64, frameArea * minimumAreaRatio);
             double minimumArea = 24;
-            // 2026-08-14: Large flames may occupy most of the frame.
+            // 2026-08-14: 큰 실제 화염이 분할되어 누락되지 않도록 상한을 확장한다.
             double maximumArea = frameArea * 0.95;
 
             using (Mat currentGray = new Mat())
             using (Mat motionMask = new Mat())
+            using (Mat candidateChangeMask = new Mat())
             using (Mat mask = CreateHotPixelMask(
                        frame,
                        threshold))
@@ -74,6 +116,10 @@ namespace OpenCvWpfTracking.Services.Video
                     Cv2.CvtColor(frame, currentGray, ColorConversionCodes.BGR2GRAY);
                 }
 
+                // 2026-08-18: RTSP 압축 노이즈를 움직임으로 오인하지 않도록
+                // 프레임 차분 전 소형 Gaussian Blur를 적용한다.
+                Cv2.GaussianBlur(currentGray, currentGray, new Size(5, 5), 0);
+
                 bool hasMotionReference =
                     _previousGray != null && !_previousGray.Empty() &&
                     _previousGray.Size() == currentGray.Size();
@@ -87,6 +133,18 @@ namespace OpenCvWpfTracking.Services.Video
 
                 Cv2.MorphologyEx(mask, cleanedMask, MorphTypes.Open, openKernel);
                 Cv2.MorphologyEx(cleanedMask, cleanedMask, MorphTypes.Close, closeKernel);
+
+                bool hasCandidateReference =
+                    _previousCandidateMask != null && !_previousCandidateMask.Empty() &&
+                    _previousCandidateMask.Size() == cleanedMask.Size();
+
+                if (hasCandidateReference)
+                {
+                    Cv2.Absdiff(
+                        cleanedMask,
+                        _previousCandidateMask,
+                        candidateChangeMask);
+                }
 
                 Cv2.FindContours(
                     cleanedMask,
@@ -113,16 +171,6 @@ namespace OpenCvWpfTracking.Services.Video
                     double fillRatio = area / rectangleArea;
                     double aspectRatio = rect.Width / (double)Math.Max(1, rect.Height);
                     double rectangleAreaRatio = rectangleArea / frameArea;
-                    bool isSmallFireCandidate =
-                        rect.Width <= 36 &&
-                        rect.Height <= 36 &&
-                        rectangleArea <= 1296;
-                    if (!isSmallFireCandidate &&
-                        area < configuredMinimumArea)
-                    {
-                        continue;
-                    }
-
                     Point[] convexHull = Cv2.ConvexHull(contour);
                     double hullArea = Math.Max(1.0, Cv2.ContourArea(convexHull));
                     double solidity = area / hullArea;
@@ -130,34 +178,65 @@ namespace OpenCvWpfTracking.Services.Video
                     double irregularity =
                         perimeter * perimeter /
                         Math.Max(1.0, 4.0 * Math.PI * area);
-                    // 2026-08-24: 큰 세로형·불규칙 화염은 낮은 프레임 차로 인해
-                    // 누락시키지 않는다. 작은 전등은 기존 시간축 검사 대상이다.
+                    bool isSmallFireCandidate =
+                        rect.Width <= 36 &&
+                        rect.Height <= 36 &&
+                        rectangleArea <= 1296;
+                    // 2026-08-24: 큰 세로형·불규칙 화염은 RTSP 압축으로 프레임 차가
+                    // 작아져도 보존한다. 작은 고정 점광원에는 기존 시간축 검사를 유지한다.
                     bool isStrongLargeFireCandidate =
                         rectangleAreaRatio >= 0.0015 &&
                         rect.Height >= Math.Max(32, frame.Height * 0.04) &&
                         aspectRatio >= 0.08 && aspectRatio <= 1.60 &&
                         fillRatio >= 0.025 &&
                         (irregularity >= 1.20 || solidity <= 0.92);
-                    double motionRatio = 1.0;
-                    if (hasMotionReference)
+                    if (!isSmallFireCandidate &&
+                        area < configuredMinimumArea)
+                    {
+                        continue;
+                    }
+                    double motionRatio = 0.0;
+                    double hotMotionRatio = 0.0;
+                    double shapeChangeRatio = 0.0;
+
+                    if (hasMotionReference && hasCandidateReference)
                     {
                         using (Mat motionRoi = new Mat(motionMask, rect))
+                        using (Mat candidateRoi = new Mat(cleanedMask, rect))
+                        using (Mat changeRoi = new Mat(candidateChangeMask, rect))
+                        using (Mat hotMotion = new Mat())
                         {
                             motionRatio = Cv2.CountNonZero(motionRoi) / rectangleArea;
+                            Cv2.BitwiseAnd(motionRoi, candidateRoi, hotMotion);
+                            hotMotionRatio =
+                                Cv2.CountNonZero(hotMotion) /
+                                Math.Max(1.0, Cv2.CountNonZero(candidateRoi));
+                            shapeChangeRatio =
+                                Cv2.CountNonZero(changeRoi) /
+                                Math.Max(1.0, Cv2.CountNonZero(candidateRoi));
                         }
 
                     }
 
-                    // 2026-08-24: 작은 정적 전등도 시간축 검사를 우회하지 않는다.
-                    // 실제 10~30 px 화염은 낮은 움직임 임계값으로 보존한다.
+                    // 2026-08-18: 색상만 고온인 고정 구조물은 후보가 아니다.
+                    // 실제 화염은 국부 픽셀 움직임과 외곽 형상 변화가 함께
+                    // 지속되어야 하며, 카메라 전체가 움직인 프레임도 제외한다.
                     if (fillRatio < 0.005 ||
                         (rectangleAreaRatio > 0.75 && fillRatio > 0.30) ||
                         (rectangleAreaRatio > 0.08 && aspectRatio > 2.2 &&
                          fillRatio > 0.18 && solidity > 0.72) ||
+                        (!isSmallFireCandidate &&
+                         solidity > 0.90 && fillRatio > 0.50 && irregularity < 1.25) ||
+                        // 2026-08-24: 작은 정적 전등도 시간축 검사를 반드시 통과시킨다.
+                        // 실제 작은 화염은 미세 움직임 또는 외곽 변화 중 하나로 유지한다.
                         (!isStrongLargeFireCandidate &&
                          (!hasMotionReference ||
-                         globalMotionRatio > 0.25 ||
-                         motionRatio < (isSmallFireCandidate ? 0.004 : 0.010))) ||
+                          !hasCandidateReference ||
+                          globalMotionRatio > 0.25 ||
+                          motionRatio < (isSmallFireCandidate ? 0.004 : 0.010) ||
+                          (hotMotionRatio < (isSmallFireCandidate ? 0.006 : 0.018) &&
+                           shapeChangeRatio < (isSmallFireCandidate ? 0.008 : 0.020)) ||
+                          (rectangleAreaRatio > 0.12 && shapeChangeRatio < 0.060))) ||
                         aspectRatio < 0.05 || aspectRatio > 20.0)
                     {
                         continue;
@@ -210,18 +289,19 @@ namespace OpenCvWpfTracking.Services.Video
                 UpdateConfirmation(selectedRect != Rect.Empty);
 
                 currentGray.CopyTo(_previousGray);
+                cleanedMask.CopyTo(_previousCandidateMask);
 
                 if (_isFireCandidateDetected && selectedRect != Rect.Empty)
                 {
                     if (mergedRects.Count == 1)
                     {
-                        DrawDetectionBox(frame, selectedRect);
+                        DrawDetectionBox(frame, selectedRect, 1);
                     }
                     else
                     {
-                        foreach (Rect rect in mergedRects)
+                        for (int index = 0; index < mergedRects.Count; index++)
                         {
-                            DrawDetectionBox(frame, rect);
+                            DrawDetectionBox(frame, mergedRects[index], index + 1);
                         }
 
                     }
@@ -322,9 +402,10 @@ namespace OpenCvWpfTracking.Services.Video
         }
 
         /// <summary>
-        /// DrawDetectionBox 동작 수행 함수.
+        /// 2026-08-26: FIRE 후보는 형광 마젠타 BBox와 프레임 내 순번으로 표시하여
+        /// 형광 라임 AI BBox와 즉시 구분한다.
         /// </summary>
-        private static void DrawDetectionBox(Mat frame, Rect rect)
+        private static void DrawDetectionBox(Mat frame, Rect rect, int detectionOrder)
         {
             double displayScale =
                 Math.Max(
@@ -341,22 +422,23 @@ namespace OpenCvWpfTracking.Services.Video
                     frame.Height,
                     displayScale);
 
+            Scalar fireOverlayColor = new Scalar(255, 0, 255);
             Cv2.Rectangle(
                 frame,
                 displayRect,
-                new Scalar(0, 0, 255),
+                fireOverlayColor,
                 lineThickness);
             Cv2.PutText(
                 frame,
-                "FIRE DETECTION",
+                "FIRE #" + detectionOrder,
                 new Point(
                     displayRect.X,
                     Math.Max(
                         (int)Math.Round(28 * displayScale),
                         displayRect.Y - (int)Math.Round(8 * displayScale))),
                 HersheyFonts.HersheySimplex,
-                Math.Max(0.8, 0.8 * displayScale),
-                new Scalar(0, 0, 255),
+                Math.Max(1.0, 1.0 * displayScale),
+                fireOverlayColor,
                 Math.Max(2, (int)Math.Round(1.5 * displayScale)));
         }
 
@@ -518,8 +600,9 @@ namespace OpenCvWpfTracking.Services.Video
                     Mat combinedMask = new Mat();
                     Cv2.BitwiseOr(redLow, redHigh, combinedMask);
                     Cv2.BitwiseOr(combinedMask, orange, combinedMask);
-                    // White/Black Hot 및 색상 팔레트의 상대 Hotspot을 모두
-                    // 유지하고 이후 움직임·지속성 단계에서 오탐을 제거한다.
+                    // 화면 RGB만 제공되는 장비에서도 White/Black Hot 및
+                    // Iron/Rainbow/Lava/Arctic/Fusion 계열의 국부 Hotspot을
+                    // 유지하도록 색상 후보와 양극성 local contrast를 결합한다.
                     Cv2.BitwiseOr(combinedMask, contrastMask, combinedMask);
                     return combinedMask;
                 }
@@ -584,6 +667,11 @@ namespace OpenCvWpfTracking.Services.Video
                 _previousGray.Dispose();
             }
             _previousGray = new Mat();
+            if (_previousCandidateMask != null)
+            {
+                _previousCandidateMask.Dispose();
+            }
+            _previousCandidateMask = new Mat();
 
             return new ThermalFireDetectionResult(
                 false,

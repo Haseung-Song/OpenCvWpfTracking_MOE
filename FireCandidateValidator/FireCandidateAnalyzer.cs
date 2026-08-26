@@ -14,13 +14,54 @@ namespace FireCandidateValidator
     internal sealed class FireCandidateAnalyzer
     {
         private int _continuousCandidateFrames;
-        // 2026-08-24: 동영상에서는 정적 전등과 실제 작은 화염을 시간축 변화로 구분한다.
+        // 2026-08-25: REI/MOE 검증 프로그램도 동일한 화재 후보 알고리즘과
+        // 오류 처리 정책을 사용하며, 반복 오류 출력은 5초 간격으로 제한한다.
+        private DateTime _lastAnalyzeErrorLogTime = DateTime.MinValue;
+        // 2026-08-18: 동영상에서는 색상 자체가 아니라 실제 화염의 프레임간
+        // 움직임과 외곽 형상 변화까지 확인한다.
         private Mat _previousGray = new Mat();
+        private Mat _previousCandidateMask = new Mat();
 
         /// <summary>
         /// Analyze 동작 수행 함수.
         /// </summary>
         internal FireCandidateAnalysis Analyze(
+            Mat source,
+            double thresholdRatio,
+            double minimumAreaRatio,
+            int confirmationFrameCount,
+            int fireBoxGroupingMode)
+        {
+            try
+            {
+                return AnalyzeCore(
+                    source,
+                    thresholdRatio,
+                    minimumAreaRatio,
+                    confirmationFrameCount,
+                    fireBoxGroupingMode);
+            }
+            catch (Exception ex)
+            {
+                DateTime now = DateTime.Now;
+                if ((now - _lastAnalyzeErrorLogTime).TotalSeconds >= 5)
+                {
+                    _lastAnalyzeErrorLogTime = now;
+                    Console.Error.WriteLine(
+                        "[FIRE CANDIDATE ERROR] Analyze failed / " +
+                        ex.Message);
+                }
+
+                Reset();
+                return FireCandidateAnalysis.Empty;
+            }
+
+        }
+
+        /// <summary>
+        /// 2026-08-25 REI/MOE 공통 검증용 화재 후보 판정 본체.
+        /// </summary>
+        private FireCandidateAnalysis AnalyzeCore(
             Mat source,
             double thresholdRatio,
             double minimumAreaRatio,
@@ -50,6 +91,7 @@ namespace FireCandidateValidator
             Mat cleanedMask = new Mat();
             Mat currentGray = new Mat();
             Mat motionMask = new Mat();
+            Mat candidateChangeMask = new Mat();
 
             using (Mat openKernel = Cv2.GetStructuringElement(MorphShapes.Ellipse, new Size(3, 3)))
             // 2026-08-14: 분리된 불꽃을 연결해 전체 화염 BBox를 만든다.
@@ -75,10 +117,14 @@ namespace FireCandidateValidator
             }
 
             Cv2.GaussianBlur(currentGray, currentGray, new Size(5, 5), 0);
+
             bool requiresTemporalMotion = confirmationFrameCount > 1;
             bool hasMotionReference =
                 _previousGray != null && !_previousGray.Empty() &&
                 _previousGray.Size() == currentGray.Size();
+            bool hasCandidateReference =
+                _previousCandidateMask != null && !_previousCandidateMask.Empty() &&
+                _previousCandidateMask.Size() == cleanedMask.Size();
             double globalMotionRatio = 0.0;
 
             if (hasMotionReference)
@@ -86,6 +132,11 @@ namespace FireCandidateValidator
                 Cv2.Absdiff(currentGray, _previousGray, motionMask);
                 Cv2.Threshold(motionMask, motionMask, 14, 255, ThresholdTypes.Binary);
                 globalMotionRatio = Cv2.CountNonZero(motionMask) / frameArea;
+            }
+
+            if (hasCandidateReference)
+            {
+                Cv2.Absdiff(cleanedMask, _previousCandidateMask, candidateChangeMask);
             }
 
             Cv2.FindContours(
@@ -112,10 +163,6 @@ namespace FireCandidateValidator
                 double fillRatio = area / rectangleArea;
                 double aspectRatio = rect.Width / (double)Math.Max(1, rect.Height);
                 double rectangleAreaRatio = rectangleArea / frameArea;
-                bool isSmallFireCandidate =
-                    rect.Width <= 36 &&
-                    rect.Height <= 36 &&
-                    rectangleArea <= 1296;
                 Point[] convexHull = Cv2.ConvexHull(contour);
                 double hullArea = Math.Max(1.0, Cv2.ContourArea(convexHull));
                 double solidity = area / hullArea;
@@ -123,25 +170,42 @@ namespace FireCandidateValidator
                 double irregularity =
                     perimeter * perimeter /
                     Math.Max(1.0, 4.0 * Math.PI * area);
-                // 2026-08-24: 큰 세로형·불규칙 화염은 압축 영상의 낮은 프레임 차로
-                // 탈락시키지 않는다. 작은 점광원은 기존 시간축 검사를 계속 적용한다.
+                bool isSmallFireCandidate =
+                    rect.Width <= 36 &&
+                    rect.Height <= 36 &&
+                    rectangleArea <= 1296;
+                // 2026-08-24: 마스크에 충분히 크게 형성된 세로형·불규칙 화염은
+                // 압축 영상에서 프레임 차가 작아도 실제 화염 후보로 보존한다.
+                // 작은 점광원은 이 경로를 통과하지 않으므로 기존 시간축 검사를 유지한다.
                 bool isStrongLargeFireCandidate =
                     IsStrongLargeFlameRect(rect, cleanedMask) &&
                     (irregularity >= 1.20 || solidity <= 0.92);
-                double motionRatio = 0.0;
-
-                if (hasMotionReference)
-                {
-                    using (Mat motionRoi = new Mat(motionMask, rect))
-                    {
-                        motionRatio = Cv2.CountNonZero(motionRoi) / rectangleArea;
-                    }
-                }
-
                 if (!isSmallFireCandidate &&
                     area < configuredMinimumArea)
                 {
                     continue;
+                }
+                double motionRatio = 0.0;
+                double hotMotionRatio = 0.0;
+                double shapeChangeRatio = 0.0;
+
+                if (hasMotionReference && hasCandidateReference)
+                {
+                    using (Mat motionRoi = new Mat(motionMask, rect))
+                    using (Mat candidateRoi = new Mat(cleanedMask, rect))
+                    using (Mat changeRoi = new Mat(candidateChangeMask, rect))
+                    using (Mat hotMotion = new Mat())
+                    {
+                        motionRatio = Cv2.CountNonZero(motionRoi) / rectangleArea;
+                        Cv2.BitwiseAnd(motionRoi, candidateRoi, hotMotion);
+                        hotMotionRatio =
+                            Cv2.CountNonZero(hotMotion) /
+                            Math.Max(1.0, Cv2.CountNonZero(candidateRoi));
+                        shapeChangeRatio =
+                            Cv2.CountNonZero(changeRoi) /
+                            Math.Max(1.0, Cv2.CountNonZero(candidateRoi));
+                    }
+
                 }
 
                 // 넓은 건물 외벽, 수평 띠 및 작은 점 노이즈를 후보에서 제외한다.
@@ -150,12 +214,19 @@ namespace FireCandidateValidator
                     (rectangleAreaRatio > 0.75 && fillRatio > 0.30) ||
                     (rectangleAreaRatio > 0.08 && aspectRatio > 2.2 &&
                      fillRatio > 0.18 && solidity > 0.72) ||
-                    // 2026-08-24: 정적 점광원은 제외하고 작은 화염의 미세 흔들림은 유지한다.
+                    (!isSmallFireCandidate &&
+                     solidity > 0.90 && fillRatio > 0.50 && irregularity < 1.25) ||
+                    // 2026-08-24: 작은 정적 전등도 시간축 검사를 반드시 통과시킨다.
+                    // 작은 실제 화염은 낮은 움직임 또는 외곽 변화 중 하나가 있으면 유지한다.
                     (requiresTemporalMotion &&
                      !isStrongLargeFireCandidate &&
                      (!hasMotionReference ||
+                      !hasCandidateReference ||
                       globalMotionRatio > 0.25 ||
-                      motionRatio < (isSmallFireCandidate ? 0.004 : 0.010))) ||
+                      motionRatio < (isSmallFireCandidate ? 0.004 : 0.010) ||
+                      (hotMotionRatio < (isSmallFireCandidate ? 0.006 : 0.018) &&
+                       shapeChangeRatio < (isSmallFireCandidate ? 0.008 : 0.020)) ||
+                      (rectangleAreaRatio > 0.12 && shapeChangeRatio < 0.060))) ||
                     aspectRatio < 0.05 || aspectRatio > 20.0)
                 {
                     continue;
@@ -169,13 +240,18 @@ namespace FireCandidateValidator
                 ExtractVerticalFlameCandidates(source, threshold);
             if (requiresTemporalMotion)
             {
+                // 2026-08-24: 충분히 큰 세로형 화염은 낮은 프레임 차에서도 유지하고,
+                // 작은 후보만 시간축 검사를 거쳐 고정 전등 오탐을 억제한다.
                 verticalFlameCandidates = verticalFlameCandidates
                     .Where(rect =>
                         IsStrongLargeFlameRect(rect, cleanedMask) ||
                         HasTemporalFlameEvidence(
                             rect,
                             motionMask,
+                            cleanedMask,
+                            candidateChangeMask,
                             hasMotionReference,
+                            hasCandidateReference,
                             globalMotionRatio))
                     .ToList();
             }
@@ -205,8 +281,10 @@ namespace FireCandidateValidator
                 _continuousCandidateFrames >= Math.Max(1, confirmationFrameCount);
 
             currentGray.CopyTo(_previousGray);
+            cleanedMask.CopyTo(_previousCandidateMask);
             currentGray.Dispose();
             motionMask.Dispose();
+            candidateChangeMask.Dispose();
 
             return new FireCandidateAnalysis(
                 cleanedMask,
@@ -241,19 +319,24 @@ namespace FireCandidateValidator
                        aspectRatio >= 0.08 && aspectRatio <= 1.60 &&
                        fillRatio >= 0.025;
             }
+
         }
 
         /// <summary>
-        /// [2026-08-24] 세로 화염 후보의 국부 프레임 변화를 검사한다.
-        /// 정적 전등은 제외하고 10~30 px 화염의 미세 움직임은 허용한다.
+        /// [2026-08-24] 동영상의 세로 화염 후보가 프레임 간 움직임 또는 외곽 변화를
+        /// 포함하는지 검사한다. 정적인 전등 점광원은 제외하되 작은 화염은 보존한다.
         /// </summary>
         private static bool HasTemporalFlameEvidence(
             Rect rect,
             Mat motionMask,
+            Mat candidateMask,
+            Mat candidateChangeMask,
             bool hasMotionReference,
+            bool hasCandidateReference,
             double globalMotionRatio)
         {
             if (!hasMotionReference ||
+                !hasCandidateReference ||
                 globalMotionRatio > 0.25 ||
                 rect.Width <= 0 ||
                 rect.Height <= 0)
@@ -262,10 +345,21 @@ namespace FireCandidateValidator
             }
 
             using (Mat motionRoi = new Mat(motionMask, rect))
+            using (Mat candidateRoi = new Mat(candidateMask, rect))
+            using (Mat changeRoi = new Mat(candidateChangeMask, rect))
+            using (Mat hotMotion = new Mat())
             {
                 double rectangleArea = Math.Max(1.0, rect.Width * rect.Height);
-                return Cv2.CountNonZero(motionRoi) / rectangleArea >= 0.004;
+                double candidatePixels = Math.Max(1.0, Cv2.CountNonZero(candidateRoi));
+                double motionRatio = Cv2.CountNonZero(motionRoi) / rectangleArea;
+                Cv2.BitwiseAnd(motionRoi, candidateRoi, hotMotion);
+                double hotMotionRatio = Cv2.CountNonZero(hotMotion) / candidatePixels;
+                double shapeChangeRatio = Cv2.CountNonZero(changeRoi) / candidatePixels;
+
+                return motionRatio >= 0.004 &&
+                       (hotMotionRatio >= 0.006 || shapeChangeRatio >= 0.008);
             }
+
         }
 
         /// <summary>
@@ -316,6 +410,7 @@ namespace FireCandidateValidator
                     {
                         darkCore.CopyTo(coreMask);
                     }
+
                 }
 
                 using (Mat openKernel =
@@ -361,10 +456,12 @@ namespace FireCandidateValidator
                                 source.Width,
                                 source.Height));
                     }
+
                 }
 
                 return flames;
             }
+
         }
 
         /// <summary>
@@ -415,12 +512,14 @@ namespace FireCandidateValidator
                         suppressed = true;
                         break;
                     }
+
                 }
 
                 if (!suppressed)
                 {
                     filtered.Add(candidate);
                 }
+
             }
 
             return filtered;
@@ -432,6 +531,10 @@ namespace FireCandidateValidator
         internal void Reset()
         {
             _continuousCandidateFrames = 0;
+            _previousGray.Dispose();
+            _previousCandidateMask.Dispose();
+            _previousGray = new Mat();
+            _previousCandidateMask = new Mat();
         }
 
         /// <summary>
@@ -656,6 +759,8 @@ namespace FireCandidateValidator
                     Cv2.BitwiseOr(colorMask, intensityMask, colorMask);
                 }
 
+                // 2026-08-14: For grayscale IR, select the sparser hot polarity.
+                // This prevents a bright or dark background from becoming one full-frame box.
                 if (Cv2.Mean(hsv).Val1 < 35)
                 {
                     Cv2.Subtract(grayscale, blurred, localContrast);
