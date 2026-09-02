@@ -2174,9 +2174,9 @@
                                                                                         <ComboBox SelectedIndex="{Binding SmokeDetectionSourceIndex,
                                                                                                                           Mode=TwoWay}"
                                                                                                   Height="28">
-                                                                                        <ComboBoxItem Content="AUTO (EO + IR)"/>
+                                                                                            <ComboBoxItem Content="AUTO (EO + IR)"/>
                                                                                             <ComboBoxItem Content="EO ONLY"/>
-                                                                                        <ComboBoxItem Content="IR ONLY"/>
+                                                                                            <ComboBoxItem Content="IR ONLY"/>
                                                                                         </ComboBox>
                                                                                     </StackPanel>
                                                                                     <StackPanel Grid.Column="2">
@@ -2610,14 +2610,14 @@
 
                                                 <!-- [PTZF] Overlay / Pan / Tilt / Zoom / Focus 이동 제어 -->
                                                 <TabItem Header="PTZF">
-                                                    <!-- 2026-08-26: 최대 스크롤 위치에서도 마지막 제어 문구 아래 여백을 유지한다. -->
+                                                    <!-- 2026-09-02: 스크롤 최상단/최하단에서 PTZF 제어와 안내 문구가 탭 경계에 잘리지 않도록 안전 여백을 확장한다. -->
                                                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                   HorizontalScrollBarVisibility="Disabled"
                                                                   CanContentScroll="False"
                                                                   PanningMode="VerticalOnly"
                                                                   IsVisibleChanged="OperationScrollViewer_IsVisibleChanged"
-                                                                  Padding="0,10,8,14">
-                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="2,0,2,2">
+                                                                  Padding="4,14,12,22">
+                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="2,2,4,8">
                                                             <!-- [EO / IR] 영상 Overlay 표시 제어 -->
                                                             <Border Margin="0,7,5,0"
                                                                     Background="#5F666D"
@@ -2955,7 +2955,7 @@
                                                                        Margin="0,4,5,6"/>
 
                                                             <!-- [Absolute] 위치 이동 영역 -->
-                                                            <Border Margin="0,3,0,7"
+                                                            <Border Margin="0,0,0,7"
                                                                     Background="#5F666D"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
@@ -3024,7 +3024,7 @@
                                                             </Border>
 
                                                             <!-- [Zoom] 위치 / 배율 제어 영역 -->
-                                                            <Border Margin="0,0,0,7"
+                                                            <Border Margin="0,0,0,12"
                                                                     Background="#5F666D"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
@@ -3494,22 +3494,22 @@
                                                 </TabItem>
 
                                                 <TabItem Header="PRESET W&#x0a;(DEVICE)">
-                                                    <!-- 2026-08-26: 최대 스크롤 위치에서도 마지막 프리셋 제어 아래 여백을 유지한다. -->
+                                                    <!-- 2026-09-02: 스크롤 최상단/최하단에서 PRESET W 버튼과 안내 문구가 탭 경계에 잘리지 않도록 안전 여백을 확장한다. -->
                                                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                   HorizontalScrollBarVisibility="Disabled"
                                                                   CanContentScroll="False"
                                                                   PanningMode="VerticalOnly"
                                                                   IsVisibleChanged="OperationScrollViewer_IsVisibleChanged"
-                                                                  Padding="0,10,8,14">
-                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="3,0,2,4">
+                                                                  Padding="4,14,12,22">
+                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="3,2,4,10">
 
                                                             <!-- 프리셋 추가 / 갱신 / 제거 -->
-                                                            <Border Margin="0,7,5,0"
+                                                            <Border Margin="0,5,0,0"
                                                                     Background="#5F666D"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
                                                                     CornerRadius="5"
-                                                                    Padding="7">
+                                                                    Padding="5">
 
                                                                 <StackPanel>
 
@@ -3568,7 +3568,7 @@
                                                                         <Button Grid.Column="0"
                                                                                 Content="REGISTER / UPDATE"
                                                                                 Height="28"
-                                                                                Margin="0,0,4,0"
+                                                                                Margin="0,0,3,0"
                                                                                 Style="{StaticResource EoControlButtonStyle}"
                                                                                 IsEnabled="{Binding IsOperationCommandEnabled}"
                                                                                 Command="{Binding AddOrUpdatePresetCommand}"/>
@@ -3576,7 +3576,7 @@
                                                                         <Button Grid.Column="1"
                                                                                 Content="DELETE SEL"
                                                                                 Height="28"
-                                                                                Margin="4,0"
+                                                                                Margin="3,0"
                                                                                 Background="#8A3D3D"
                                                                                 Foreground="White"
                                                                                 FontWeight="Bold"
@@ -3588,7 +3588,7 @@
                                                                         <Button Grid.Column="2"
                                                                                 Content="DELETE ALL"
                                                                                 Height="28"
-                                                                                Margin="4,0,0,0"
+                                                                                Margin="3,0,0,0"
                                                                                 Background="#702D2D"
                                                                                 Foreground="White"
                                                                                 FontWeight="Bold"
@@ -3611,12 +3611,12 @@
                                                             </Border>
 
                                                             <!-- 현재 프로그램에서 등록한 프리셋 목록 -->
-                                                            <Border Margin="0,5,5,0"
+                                                            <Border Margin="0,8,0,0"
                                                                     Background="#5F666D"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
                                                                     CornerRadius="5"
-                                                                            Padding="5">
+                                                                    Padding="5">
 
                                                                 <StackPanel>
 
@@ -3703,12 +3703,12 @@
                                                             </Border>
 
                                                             <!-- 프리셋 오토 스캔 -->
-                                                            <Border Margin="0,5,5,3"
+                                                            <Border Margin="0,8,0,3"
                                                                     Background="#5F666D"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
                                                                     CornerRadius="5"
-                                                                    Padding="7">
+                                                                    Padding="5">
 
                                                                 <StackPanel>
 
@@ -4348,8 +4348,7 @@
 
                     <!-- [AI Detector] 설정 패널
 
-                        V1에서는 기존 화면 비율과 외곽 Border를 유지하고
-                    내부 AI 설정 UI만 숨긴다. -->
+                        V1에서는 기존 화면 비율과 외곽 Border를 유지하고 내부 AI 설정 UI만 숨긴다. -->
                     <Border Grid.Row="1"
                             x:Name="AiDetectorPanelBorder"
                             Visibility="Collapsed"
