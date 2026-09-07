@@ -46,6 +46,10 @@ namespace OpenCvWpfTracking.Services.Video
         private string _diagnosticDirectory;
         private string _diagnosticChannel;
         private int _diagnosticFrameIndex;
+        private int _diagnosticSnapshotCount;
+        private bool _diagnosticSnapshotLimitLogged;
+        private const int DiagnosticSnapshotIntervalFrames = 300;
+        private const int DiagnosticMaximumSnapshotCount = 120;
 
         internal void StartDiagnostic(string directory, string channel)
         {
@@ -55,6 +59,9 @@ namespace OpenCvWpfTracking.Services.Video
                 Directory.CreateDirectory(directory);
                 _diagnosticDirectory = directory;
                 _diagnosticChannel = channel;
+                _diagnosticFrameIndex = 0;
+                _diagnosticSnapshotCount = 0;
+                _diagnosticSnapshotLimitLogged = false;
                 _diagnosticWriter = new StreamWriter(
                     Path.Combine(directory, "fire_candidates.csv"),
                     false,
@@ -80,6 +87,8 @@ namespace OpenCvWpfTracking.Services.Video
             _diagnosticDirectory = null;
             _diagnosticChannel = null;
             _diagnosticFrameIndex = 0;
+            _diagnosticSnapshotCount = 0;
+            _diagnosticSnapshotLimitLogged = false;
         }
 
         private void WriteDiagnosticFrame(
@@ -127,7 +136,10 @@ namespace OpenCvWpfTracking.Services.Video
                     }
                 }
 
-                if (_diagnosticFrameIndex == 1 || _diagnosticFrameIndex % 30 == 0)
+                bool snapshotDue = _diagnosticFrameIndex == 1 ||
+                    _diagnosticFrameIndex % DiagnosticSnapshotIntervalFrames == 0;
+                if (snapshotDue &&
+                    _diagnosticSnapshotCount < DiagnosticMaximumSnapshotCount)
                 {
                     string frameDirectory = Path.Combine(
                         _diagnosticDirectory,
@@ -146,6 +158,16 @@ namespace OpenCvWpfTracking.Services.Video
                         }
                         Cv2.ImWrite(Path.Combine(frameDirectory, "FINAL.png"), finalMask);
                     }
+
+                    _diagnosticSnapshotCount++;
+                }
+                else if (snapshotDue && !_diagnosticSnapshotLimitLogged)
+                {
+                    _diagnosticSnapshotLimitLogged = true;
+                    ConsoleLogHelper.State(
+                        "FIRE DIAGNOSTIC",
+                        "Snapshot limit reached; CSV recording continues / CHANNEL=" +
+                        _diagnosticChannel + " / LIMIT=" + DiagnosticMaximumSnapshotCount);
                 }
 
                 if (_diagnosticFrameIndex % 30 == 0)
@@ -354,6 +376,14 @@ namespace OpenCvWpfTracking.Services.Video
 
                     }
 
+                    bool strongLargeTemporalEvidence =
+                        hasMotionReference &&
+                        hasCandidateReference &&
+                        globalMotionRatio <= 0.25 &&
+                        (motionRatio >= 0.004 ||
+                         hotMotionRatio >= 0.008 ||
+                         shapeChangeRatio >= 0.012);
+
                     // 2026-08-18: 색상만 고온인 고정 구조물은 후보가 아니다.
                     // 실제 화염은 국부 픽셀 움직임과 외곽 형상 변화가 함께
                     // 지속되어야 하며, 카메라 전체가 움직인 프레임도 제외한다.
@@ -363,6 +393,7 @@ namespace OpenCvWpfTracking.Services.Video
                          fillRatio > 0.18 && solidity > 0.72) ||
                         (!isSmallFireCandidate &&
                          solidity > 0.90 && fillRatio > 0.50 && irregularity < 1.25) ||
+                        (isStrongLargeFireCandidate && !strongLargeTemporalEvidence) ||
                         // 2026-08-24: 작은 정적 전등도 시간축 검사를 반드시 통과시킨다.
                         // 실제 작은 화염은 미세 움직임 또는 외곽 변화 중 하나로 유지한다.
                         (!isStrongLargeFireCandidate &&
@@ -894,7 +925,7 @@ namespace OpenCvWpfTracking.Services.Video
             double shapeChange = Math.Abs(currentAspect - initialAspect) /
                 Math.Max(0.25, initialAspect);
 
-            double score = 20.0 +
+            double score = 50.0 +
                 Math.Min(12.0, Math.Sqrt(Math.Max(0.0, areaRatio)) * 46.0) +
                 Math.Min(4.0, verticality * 7.0) +
                 Math.Min(3.0, aspectBalance * 3.0) +
@@ -912,7 +943,7 @@ namespace OpenCvWpfTracking.Services.Video
                 score -= 15.0;
             }
 
-            return Math.Max(5.0, Math.Min(92.0, score));
+            return Math.Max(50.0, Math.Min(95.0, score));
         }
 
         /// <summary>

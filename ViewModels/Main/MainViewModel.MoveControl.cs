@@ -517,14 +517,14 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// <summary>
         /// MovePanAbsoluteFromInputAsync 이동 함수.
         /// </summary>
-        private Task MovePanAbsoluteFromInputAsync()
+        private async Task MovePanAbsoluteFromInputAsync()
         {
             if (!PanAbsoluteValue.HasValue)
             {
                 Console.WriteLine(
                     "[MOVE CONTROL] PAN ABSOLUTE FAILED : EMPTY VALUE");
 
-                return Task.CompletedTask;
+                return;
             }
 
             double targetPan =
@@ -542,8 +542,12 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             if (!speedResult)
             {
-                return Task.CompletedTask;
+                return;
             }
+
+            // 실장비 Web Agent는 위치 속도와 절대좌표 명령을 연속 전송하면
+            // 앞선 설정 명령을 처리하기 전에 다음 Packet을 받을 수 있다.
+            await Task.Delay(60);
 
             bool modeResult =
                 ApplySelectedPanTurnMode();
@@ -557,8 +561,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 ConsoleLogHelper.PrintLine();
 
-                return Task.CompletedTask;
+                return;
             }
+
+            await Task.Delay(60);
 
             bool moveResult =
                 _controlCommandService
@@ -590,7 +596,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             ConsoleLogHelper.PrintLine();
 
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -631,7 +636,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// <summary>
         /// Tilt Absolute 이동 요청
         /// </summary>
-        private void MoveTiltAbsoluteFromInput()
+        private async void MoveTiltAbsoluteFromInput()
         {
             if (!TiltAbsoluteValue.HasValue)
             {
@@ -656,6 +661,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 return;
             }
+
+            // Pan과 동일하게 속도 설정 적용 시간을 확보한 뒤 목표를 보낸다.
+            await Task.Delay(60);
 
             Console.WriteLine();
             Console.WriteLine(
@@ -689,7 +697,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// 0x19 ID -> 0x91 Pan -> 0x93 Tilt -> 0x95 Zoom
         /// -> 0x97 Focus + AddPreset
         /// </summary>
-        private void AddOrUpdateLaPresetPoint()
+        private async void AddOrUpdateLaPresetPoint()
         {
             ConsoleLogHelper.Command(
                 "PRESET L",
@@ -717,11 +725,15 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     .SetLaPresetId(
                         (ushort)laInternalId);
 
+            await Task.Delay(50);
+
             bool panResult =
                 idResult &&
                 _controlCommandService
                     .SetLaPresetPan(
                         _currentPan);
+
+            await Task.Delay(50);
 
             bool tiltResult =
                 panResult &&
@@ -729,11 +741,15 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     .SetLaPresetTilt(
                         _currentTilt);
 
+            await Task.Delay(50);
+
             bool zoomResult =
                 tiltResult &&
                 _controlCommandService
                     .SetLaPresetZoom(
                         zoom);
+
+            await Task.Delay(50);
 
             bool focusResult =
                 zoomResult &&
@@ -913,8 +929,14 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 panSpeedResult &&
                 tiltSpeedResult;
 
+            // 프리셋 직접 이동도 수동 Absolute·파노라마와 같은 장비 명령
+            // 처리 간격을 사용해 연속 Packet 유실을 방지한다.
+            await Task.Delay(60, cancellationToken);
+
             bool modeResult =
                 ApplySelectedPanTurnMode();
+
+            await Task.Delay(60, cancellationToken);
 
             bool panResult =
                 modeResult &&
@@ -922,6 +944,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 _controlCommandService
                     .PanGoPosition(
                         preset.Pan);
+
+            await Task.Delay(60, cancellationToken);
 
             bool tiltResult =
                 speedResult &&
@@ -1791,29 +1815,20 @@ namespace OpenCvWpfTracking.ViewModels.Main
                             preset.Number ==
                             newPreset.Number);
 
+            PreparePresetForUpsert(newPreset, LaPresetPoints, existingPreset);
+
             if (existingPreset != null)
             {
                 LaPresetPoints.Remove(
                     existingPreset);
             }
 
-            int insertIndex =
-                0;
-
-            while (insertIndex <
-                       LaPresetPoints.Count &&
-                   LaPresetPoints[insertIndex].Number <
-                       newPreset.Number)
-            {
-                insertIndex++;
-            }
-
-            LaPresetPoints.Insert(
-                insertIndex,
-                newPreset);
+            LaPresetPoints.Add(newPreset);
+            ReorderPresetCollections();
 
             SelectedLaPresetPoint =
                 newPreset;
+            SavePresetStorage();
         }
 
         /// <summary>
@@ -1835,6 +1850,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 IsLaPresetScanRunning =
                     false;
+                SavePresetStorage();
             }
 
             Console.WriteLine();
@@ -1872,6 +1888,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             LaPresetPoints.Remove(selected);
             SelectedLaPresetPoint =
                 LaPresetPoints.FirstOrDefault();
+            SavePresetStorage();
 
             ConsoleLogHelper.State(
                 "PRESET L",
@@ -1953,16 +1970,11 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 bool isFirstPointOfScan =
                     true;
+                PresetPointOption[] points =
+                    CreatePresetScanQueue(LaPresetPoints);
 
                 while (!scanCts.IsCancellationRequested)
                 {
-                    PresetPointOption[] points =
-                        LaPresetPoints
-                            .OrderBy(
-                                point =>
-                                    point.Number)
-                            .ToArray();
-
                     foreach (PresetPointOption point in points)
                     {
                         scanCts.Token
@@ -2339,6 +2351,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             SelectedPresetPoint =
                 PresetPoints.FirstOrDefault();
+            SavePresetStorage();
 
             PresetCommandStatusText =
                 $"P{presetNumber:00} CLEAR PRESET SENT";
@@ -2383,6 +2396,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             SelectedPresetPoint =
                 PresetPoints.FirstOrDefault();
+            SavePresetStorage();
             PresetCommandStatusText =
                 failedCount == 0
                     ? "ALL REGISTERED PRESETS CLEARED"
@@ -2582,9 +2596,13 @@ namespace OpenCvWpfTracking.ViewModels.Main
             PresetCommandStatusText =
                 "WEB AGENT PRESET LOOP STARTED";
 
+            PresetPointOption[] scanQueue =
+                CreatePresetScanQueue(PresetPoints);
+
             _ =
                 RunPreset2DirectScanAsync(
-                    scanCts);
+                    scanCts,
+                    scanQueue);
         }
 
         /// <summary>
@@ -2614,7 +2632,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// WPF가 등록 목록을 순회하며 WEB AGENT에 Pelco-D GOTO PRESET(0x07)을 반복 송신한다.
         /// </summary>
         private async Task RunPreset2DirectScanAsync(
-            CancellationTokenSource scanCts)
+            CancellationTokenSource scanCts,
+            PresetPointOption[] snapshot)
         {
             CancellationToken cancellationToken =
                 scanCts.Token;
@@ -2623,13 +2642,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    PresetPointOption[] snapshot =
-                        PresetPoints
-                            .OrderBy(
-                                preset =>
-                                    preset.Number)
-                            .ToArray();
-
                     foreach (PresetPointOption preset in snapshot)
                     {
                         cancellationToken
@@ -2893,29 +2905,20 @@ namespace OpenCvWpfTracking.ViewModels.Main
                             preset.Number ==
                             newPreset.Number);
 
+            PreparePresetForUpsert(newPreset, PresetPoints, existingPreset);
+
             if (existingPreset != null)
             {
                 PresetPoints.Remove(
                     existingPreset);
             }
 
-            int insertIndex =
-                0;
-
-            while (insertIndex <
-                       PresetPoints.Count &&
-                   PresetPoints[insertIndex].Number <
-                       newPreset.Number)
-            {
-                insertIndex++;
-            }
-
-            PresetPoints.Insert(
-                insertIndex,
-                newPreset);
+            PresetPoints.Add(newPreset);
+            ReorderPresetCollections();
 
             SelectedPresetPoint =
                 newPreset;
+            SavePresetStorage();
         }
 
         /// <summary>
@@ -3014,6 +3017,14 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     _webAgentZoomControlService
                         .ApplySynchronizedZoom(
                             (short)safePosition);
+
+                if (result)
+                {
+                    ApplyEnvironmentIrCommandedPosition(
+                        safePosition,
+                        null,
+                        "ENVIRONMENT MOVE CONTROL ZOOM");
+                }
 
                 Console.WriteLine(
                     $"[MOVE CONTROL] ENVIRONMENT ZOOM RESULT : {result}");
@@ -3155,11 +3166,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     ConvertIrFocusStandardToStatusPosition(
                         safePosition);
 
-                Task<bool> irMoveTask =
-                    MoveIrFocusToPositionAsync(
-                        irRawTargetPosition,
-                        focusCts.Token);
-
                 if (SelectedEquipmentStatusMode ==
                     EquipmentStatusMode.Environment)
                 {
@@ -3168,11 +3174,21 @@ namespace OpenCvWpfTracking.ViewModels.Main
                             .EoFocusGoPosition(
                                 (short)safePosition);
 
-                    irResult =
-                        await irMoveTask;
+                    irResult = Interlocked.Read(ref _irLensStatusVersion) > 0
+                        ? await MoveIrFocusToPositionAsync(
+                            irRawTargetPosition,
+                            focusCts.Token)
+                        : await MoveEnvironmentIrFocusWithoutFeedbackAsync(
+                            safePosition,
+                            focusCts.Token);
                 }
                 else
                 {
+                    Task<bool> irMoveTask =
+                        MoveIrFocusToPositionAsync(
+                            irRawTargetPosition,
+                            focusCts.Token);
+
                     RtspSourceOption ctecSource =
                         _connectedEoCtecSource;
 

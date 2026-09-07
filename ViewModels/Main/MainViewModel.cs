@@ -128,7 +128,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// 환경부 실장비 열상(IR) PTZ 카메라 RTSP 기본값
         /// </summary>
         private const string MoeIrRtspAddress =
-            "rtsp://root:rmffhqjf1!@10.20.30.40:554/cam0_0";
+            "rtsp://root:rmffhqjf1!@192.168.0.101:554/cam0_0";
 
         #endregion
 
@@ -301,6 +301,27 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// 실제 장비 상태값인지 판별하는 데 사용한다.
         /// </summary>
         private long _irLensStatusVersion;
+
+        /// <summary>
+        /// 환경장비 Web Agent가 Function 0x07 IR 렌즈 상태를 제공하지 않을 때
+        /// Focus 전 구간을 이동시키는 보수적 기준 시간이다.
+        /// </summary>
+        private const int EnvironmentIrFocusFullTravelMs =
+            1600;
+
+        /// <summary>
+        /// 무피드백 Focus Sync 시작 전에 FAR 끝점(표준값 0)을 확보하는 시간이다.
+        /// </summary>
+        private const int EnvironmentIrFocusHomeMs =
+            1800;
+
+        private const int EnvironmentIrZoomFullTravelMs =
+            5000;
+
+        private DateTime _environmentIrManualMoveStartedUtc;
+        private int _environmentIrManualMoveDirection;
+        private ContinuousMoveType _environmentIrManualMoveType =
+            ContinuousMoveType.None;
 
         /// <summary>
         /// 프로그램 시작 이후 고정밀 경과시간 측정용
@@ -829,6 +850,11 @@ namespace OpenCvWpfTracking.ViewModels.Main
         /// </summary>
         private PanTurnMode _panTurnMode =
             PanTurnMode.Short;
+
+        private PresetScanOrderMode _presetScanOrderMode =
+            PresetScanOrderMode.SavedOrder;
+
+        private bool _isLoadingPresetStorage;
 
         /// <summary>
         /// Pan Absolute 입력값
@@ -2024,6 +2050,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             InitializeThermalFeatures();
             InitializeSmokeFeatures();
             InitializeFireEventFeatures();
+            LoadPresetStorage();
 
             ConsoleLogHelper.PrintSection(
                 "[CONTROL AGENT]",

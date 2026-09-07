@@ -551,12 +551,19 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             BeginPanoramaCameraMotion("PAN", targetPan);
 
+            // 명령 직전 버전을 보관해야 빠른 상태 응답도 도착 판정에 포함된다.
+            long observedVersion =
+                Interlocked.Read(
+                    ref _panTiltStatusVersion);
+
+            bool speedResult =
+                _controlCommandService.SetPanPositionSpeed(positionSpeed);
+            await Task.Delay(60, cancellationToken);
+            bool modeResult =
+                speedResult && _controlCommandService.SetPanShortestPathMode();
+            await Task.Delay(60, cancellationToken);
             bool commandResult =
-                _controlCommandService.SetPanPositionSpeed(
-                    positionSpeed) &&
-                _controlCommandService.SetPanShortestPathMode() &&
-                _controlCommandService.PanGoPosition(
-                    targetPan);
+                modeResult && _controlCommandService.PanGoPosition(targetPan);
 
             ConsoleLogHelper.Command(
                 "EO PANORAMA / MOVE",
@@ -571,10 +578,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             _lastPanAbsoluteTarget =
                 targetPan;
-
-            long observedVersion =
-                Interlocked.Read(
-                    ref _panTiltStatusVersion);
 
             int stableCount = 0;
             Stopwatch stopwatch =
@@ -659,11 +662,16 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             BeginPanoramaCameraMotion("TILT", targetTilt);
 
+            // 명령 직전 버전을 보관해 목표 전송 직후 수신된 상태도 놓치지 않는다.
+            long observedVersion =
+                Interlocked.Read(
+                    ref _panTiltStatusVersion);
+
+            bool speedResult =
+                _controlCommandService.SetTiltPositionSpeed(positionSpeed);
+            await Task.Delay(60, cancellationToken);
             bool commandResult =
-                _controlCommandService.SetTiltPositionSpeed(
-                    positionSpeed) &&
-                _controlCommandService.TiltGoPosition(
-                    targetTilt);
+                speedResult && _controlCommandService.TiltGoPosition(targetTilt);
 
             ConsoleLogHelper.Command(
                 "EO PANORAMA / MOVE",
@@ -675,10 +683,6 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 return false;
             }
-
-            long observedVersion =
-                Interlocked.Read(
-                    ref _panTiltStatusVersion);
 
             int stableCount = 0;
             Stopwatch stopwatch =

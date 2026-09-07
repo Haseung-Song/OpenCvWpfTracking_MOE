@@ -225,6 +225,9 @@ namespace OpenCvWpfTracking.Services.Communication
                 return false;
             }
 
+            bool shouldNotifyConnectionClosed =
+                false;
+
             lock (_socketLock)
             {
                 try
@@ -256,10 +259,22 @@ namespace OpenCvWpfTracking.Services.Communication
                         "[TCP ERROR] Send Failed : " +
                         ex.Message);
 
-                    return false;
+                    // TcpClient.Connected는 상대 장비가 연결을 끊은 직후에도
+                    // true를 반환할 수 있다. 송신 실패 시 고장난 Stream을 즉시
+                    // 폐기하고 자동 재연결 경로를 깨운다.
+                    shouldNotifyConnectionClosed =
+                        !_isManualDisconnect;
+                    CleanupSocketInternal();
                 }
 
             }
+
+            if (shouldNotifyConnectionClosed)
+            {
+                ConnectionClosed?.Invoke();
+            }
+
+            return false;
 
         }
 
