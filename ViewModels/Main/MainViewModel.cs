@@ -1562,9 +1562,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         AiSettingStatusText = "[AI] Apply RTSP...";
 
-                        await RequestAiDetectorRtspAddressSetAsync();
-
-                        AiSettingStatusText = "[AI] RTSP Apply Complete";
+                        bool applied = await RequestAiDetectorRtspAddressSetAsync();
+                        AiSettingStatusText = applied
+                            ? "[AI] RTSP Apply Complete"
+                            : "[AI] RTSP Apply Failed / Check configuration";
                     });
 
             /// <summary>
@@ -2047,6 +2048,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             /// AI Detector 설정 기본값 초기화
             /// </summary>
             InitializeAiDetectorSetting();
+            LoadRtspCommunicationSettings();
             InitializeThermalFeatures();
             InitializeSmokeFeatures();
             InitializeFireEventFeatures();

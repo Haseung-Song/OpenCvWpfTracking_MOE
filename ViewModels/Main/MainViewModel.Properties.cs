@@ -1538,6 +1538,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsEoRtspDirectInput));
+                SaveRtspCommunicationSettings();
             }
 
         }
@@ -1597,6 +1598,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsIrRtspDirectInput));
+                SaveRtspCommunicationSettings();
             }
 
         }
@@ -2782,15 +2784,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             = new ObservableCollection<RtspSourceOption>
             {
                 new RtspSourceOption(
-                    "1층 생산팀 ADS 주간(EO)",
-                    "rtsp://service:Xhddlf1!@192.168.0.100:554/rtsp_tunnel"),
-
-                new RtspSourceOption(
-                    "옥상 GOP 주간(EO)",
-                    "rtsp://root:rmffhqjf1!@192.168.1.2:554/AVStream1_1"),
-
-                new RtspSourceOption(
-                    "4층 환경부 PTZ 주간(EO)",
+                    "환경부(MOE) PTZ 주간(EO)",
                     MoeEoRtspAddress),
 
                 new RtspSourceOption(
@@ -2806,15 +2800,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             = new ObservableCollection<RtspSourceOption>
             {
                 new RtspSourceOption(
-                    "1층 생산팀 ADS 열상(IR)",
-                    "rtsp://admin:admin@192.168.0.101:554/hdmi"),
-
-                new RtspSourceOption(
-                    "옥상 GOP 열상(IR)",
-                    "rtsp://root:rmffhqjf1!@192.168.0.121:554/cam0_0"),
-
-                new RtspSourceOption(
-                    "4층 환경부 PTZ 열상(IR)",
+                    "환경부(MOE) PTZ 열상(IR)",
                     MoeIrRtspAddress),
 
                 new RtspSourceOption(

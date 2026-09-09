@@ -3,5 +3,18 @@
   <Profiles>
     <Profile Name="(Default)" />
   </Profiles>
-  <Settings />
+  <Settings>
+    <Setting Name="SavedEoRtspUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">rtsp://root:rmffhqjf1!@192.168.0.100:554/AVStream1_1</Value>
+    </Setting>
+    <Setting Name="SavedIrRtspUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">rtsp://root:rmffhqjf1!@192.168.0.101:554/cam0_0</Value>
+    </Setting>
+    <Setting Name="SavedEoRtspPreset" Type="System.String" Scope="User">
+      <Value Profile="(Default)">환경부(MOE) PTZ 주간(EO)</Value>
+    </Setting>
+    <Setting Name="SavedIrRtspPreset" Type="System.String" Scope="User">
+      <Value Profile="(Default)">환경부(MOE) PTZ 열상(IR)</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>
