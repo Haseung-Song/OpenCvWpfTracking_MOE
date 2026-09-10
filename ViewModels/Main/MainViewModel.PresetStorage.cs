@@ -78,6 +78,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 string safeName = (preset.Name ?? $"P{preset.Number:00}").Replace("\t", " ").Replace("\r", " ").Replace("\n", " ");
                 lines.Add(string.Join("\t", new[] { type, preset.SavedOrder.ToString(CultureInfo.InvariantCulture), preset.Number.ToString(CultureInfo.InvariantCulture), safeName, preset.Pan.ToString("R", CultureInfo.InvariantCulture), preset.Tilt.ToString("R", CultureInfo.InvariantCulture), preset.EoZoomText, preset.EoFocusText, preset.IrZoomText, preset.IrFocusText }));
             }
+
         }
 
         private void PreparePresetForUpsert(PresetPointOption newPreset, IEnumerable<PresetPointOption> presets, PresetPointOption existingPreset)
@@ -101,7 +102,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
             List<PresetPointOption> remaining = source.OrderBy(p => p.SavedOrder).ThenBy(p => p.Number).ToList();
             if (_presetScanOrderMode == PresetScanOrderMode.SavedOrder) return remaining.ToArray();
             List<PresetPointOption> result = new List<PresetPointOption>();
-            double pan = _currentPan; double tilt = _currentTilt;
+            double pan = _currentPan;
+            double tilt = _currentTilt;
             while (remaining.Count > 0)
             {
                 PresetPointOption nearest = remaining.OrderBy(p => PresetDistance(pan, tilt, p)).ThenBy(p => p.SavedOrder).First();
@@ -120,4 +122,5 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
         private static int ClampPresetScanSetting(int value) => Math.Max(1, Math.Min(60, value));
     }
+
 }

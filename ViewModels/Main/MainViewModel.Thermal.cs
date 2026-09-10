@@ -87,6 +87,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         FireDiagnosticPathText = "ERROR : " + exception.Message;
                         ConsoleLogHelper.Error("FIRE DIAGNOSTIC", "Live diagnostic start failed", exception);
                     }
+
                 }
                 else
                 {
@@ -98,6 +99,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
                 OnPropertyChanged();
             }
+
         }
 
         public string FireDiagnosticPathText
@@ -112,6 +114,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 _fireDiagnosticPathText = value;
                 OnPropertyChanged();
             }
+
         }
 
         public bool IsThermalFireDetectionEnabled

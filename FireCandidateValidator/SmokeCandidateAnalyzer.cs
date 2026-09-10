@@ -441,6 +441,7 @@ namespace FireCandidateValidator
                                     rect, area, fillRatio, aspectRatio, edgeDensity,
                                     "PASS", "TRACK_INPUT");
                             }
+
                         }
                         else
                         {
@@ -455,6 +456,7 @@ namespace FireCandidateValidator
                                 largestAreaRatio,
                                 rectangleArea / frameArea);
                     }
+
                 }
 
                 candidates =
@@ -499,6 +501,7 @@ namespace FireCandidateValidator
 
                         diagnostic.CaptureStage("FINAL", finalMask);
                     }
+
                 }
 
                 _continuousCandidateFrames = 0;
@@ -511,6 +514,7 @@ namespace FireCandidateValidator
                                 _continuousCandidateFrames,
                                 track.SeenFrames);
                     }
+
                 }
 
                 bool isConfirmed = confirmedCandidates.Count > 0;
@@ -558,6 +562,7 @@ namespace FireCandidateValidator
                 structureEdges.Dispose();
                 motionCompensatedReference.Dispose();
             }
+
         }
 
         /// <summary>
@@ -644,6 +649,7 @@ namespace FireCandidateValidator
                     BorderTypes.Reflect101);
                 return true;
             }
+
         }
 
         internal void Reset()
@@ -798,6 +804,7 @@ namespace FireCandidateValidator
                         {
                             score = 0.085;
                         }
+
                     }
 
                     if (score > bestScore)
@@ -805,6 +812,7 @@ namespace FireCandidateValidator
                         bestScore = score;
                         bestTrack = track;
                     }
+
                 }
 
                 if (bestTrack == null || bestScore < 0.08)
@@ -884,6 +892,7 @@ namespace FireCandidateValidator
                         {
                             bestTrack.DirectionChangeSamples++;
                         }
+
                     }
 
                     if (areaDelta < 0.100 && shapeDelta < 0.100)
@@ -921,6 +930,7 @@ namespace FireCandidateValidator
                         {
                             bestTrack.SourceDirectionChangeSamples++;
                         }
+
                     }
 
                     bestTrack.LastSourceMotionX = sourceDeltaX;
@@ -1075,6 +1085,7 @@ namespace FireCandidateValidator
                 {
                     _tracks.RemoveAt(index);
                 }
+
             }
 
             List<Rect> confirmed =
@@ -1346,8 +1357,11 @@ namespace FireCandidateValidator
                         {
                             _lastContinuityHeldCount++;
                         }
+
                     }
+
                 }
+
             }
 
             return confirmed;
@@ -1529,6 +1543,7 @@ namespace FireCandidateValidator
                     target[index] = existing | candidate;
                     return;
                 }
+
             }
 
             target.Add(candidate);
@@ -1808,7 +1823,8 @@ namespace FireCandidateValidator
             {
                 get
                 {
-                    int changes = 0; int previousSign = 0;
+                    int changes = 0;
+                    int previousSign = 0;
                     foreach (double value in _recentVerticalMotion)
                     {
                         int sign = value <= -1.0 ? -1 : value >= 1.0 ? 1 : 0;
@@ -1817,12 +1833,14 @@ namespace FireCandidateValidator
                     }
                     return changes;
                 }
+
             }
             internal void RecordRecentVerticalMotion(double value)
             {
                 _recentVerticalMotion.Enqueue(value);
                 while (_recentVerticalMotion.Count > 20) _recentVerticalMotion.Dequeue();
             }
+
         }
 
     }
@@ -2015,6 +2033,7 @@ namespace FireCandidateValidator
 
             _stageMasks.Clear();
         }
+
     }
 
     internal sealed class SmokeDiagnosticRecord

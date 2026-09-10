@@ -835,6 +835,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 OnPropertyChanged(nameof(IsPresetNearestOrderMode));
                 SavePresetStorage();
             }
+
         }
 
         public bool IsPresetNearestOrderMode
@@ -848,6 +849,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 OnPropertyChanged(nameof(IsPresetSavedOrderMode));
                 SavePresetStorage();
             }
+
         }
 
         /// <summary>

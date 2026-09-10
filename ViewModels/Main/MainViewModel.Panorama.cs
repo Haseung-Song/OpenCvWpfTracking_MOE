@@ -23,9 +23,10 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
         private const double PanoramaCaptureStepDegrees = 10.0;
         private const int PanoramaCaptureFrameCount = 36;
-        // 2026-09-08: 현장 장비의 상태 Packet 지연·0.1° 내외 정착 편차로 인한
-        // 허위 timeout을 방지한다. 10° 촬영 간격 대비 충분히 작은 허용 범위다.
-        private const double PanoramaPanTolerance = 0.15;
+        // 2026-09-10: 실장비가 목표각 주변 ±0.2° 이상에서 정착하는 경우에도
+        // 허위 timeout이 발생하지 않도록 한다. 10° 촬영 간격 대비 0.5°는
+        // 행/열 정합 순서를 훼손하지 않는 충분히 작은 허용 범위다.
+        private const double PanoramaPositionTolerance = 0.5;
         private const int PanoramaPanStableSampleCount = 3;
         private const int PanoramaCapturePositionSpeed = 15;
         private const int PanoramaMaximumEoZoomPosition = 100;
@@ -59,6 +60,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 OnPropertyChanged(nameof(SelectedPanoramaRowCount));
                 OnPropertyChanged(nameof(SelectedPanoramaTotalFrameCount));
             }
+
         }
 
         public int SelectedPanoramaTiltRangeDegrees => (_selectedPanoramaCaptureOptionIndex + 1) * 12;
@@ -228,6 +230,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     targets.Add(startTilt + upperOffset - rowIndex * step);
                 }
+
             }
 
             if (targets.Exists(target => target < -90.0 || target > 90.0))
@@ -553,6 +556,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         false;
                     ResetPanoramaDetectionGate();
                 }
+
             }
 
         }
@@ -572,6 +576,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 _latestRawEoPanoramaFrame = frame;
             }
+
         }
 
         private BitmapSource GetRawEoPanoramaFrame()
@@ -580,6 +585,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 return _latestRawEoPanoramaFrame;
             }
+
         }
 
         private void ClearRawEoPanoramaFrame()
@@ -657,7 +663,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private async Task<bool> MovePanForPanoramaAsync(
             double targetPan,
             int positionSpeed,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool allowRetry = true)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -685,21 +692,44 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             if (!commandResult)
             {
+                if (allowRetry)
+                {
+                    ConsoleLogHelper.Warning(
+                        "EO PANORAMA / MOVE",
+                        "Pan command send failed; retrying once / TARGET=" + targetPan.ToString("F2"));
+                    await Task.Delay(250, cancellationToken);
+                    return await MovePanForPanoramaAsync(
+                        targetPan,
+                        positionSpeed,
+                        cancellationToken,
+                        false);
+                }
+
                 return false;
             }
 
             _lastPanAbsoluteTarget =
                 targetPan;
 
-            int stableCount = 0;
-            Stopwatch stopwatch =
-                Stopwatch.StartNew();
-
             double distance =
                 Math.Abs(
                     GetShortestPanDifference(
                         _currentPan,
                         targetPan));
+
+            if (distance <= PanoramaPositionTolerance)
+            {
+                EndPanoramaCameraMotion("PAN", targetPan);
+                ConsoleLogHelper.State(
+                    "EO PANORAMA / MOVE",
+                    "Pan target already within tolerance / TARGET=" + targetPan.ToString("F2") +
+                    " / ACTUAL=" + _currentPan.ToString("F2"));
+                return true;
+            }
+
+            int stableCount = 0;
+            Stopwatch stopwatch =
+                Stopwatch.StartNew();
 
             int timeoutMs =
                 Math.Max(
@@ -736,7 +766,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                             targetPan));
 
                 stableCount =
-                    panDelta <= PanoramaPanTolerance
+                    panDelta <= PanoramaPositionTolerance
                         ? stableCount + 1
                         : 0;
 
@@ -758,6 +788,20 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 "Pan target timeout / TARGET=" + targetPan.ToString("F2") +
                 " / ACTUAL=" + _currentPan.ToString("F2") +
                 " / TIMEOUT_MS=" + timeoutMs);
+
+            if (allowRetry)
+            {
+                ConsoleLogHelper.Warning(
+                    "EO PANORAMA / MOVE",
+                    "Pan target timeout; retrying once / TARGET=" + targetPan.ToString("F2"));
+                await Task.Delay(250, cancellationToken);
+                return await MovePanForPanoramaAsync(
+                    targetPan,
+                    positionSpeed,
+                    cancellationToken,
+                    false);
+            }
+
             return false;
         }
 
@@ -768,7 +812,8 @@ namespace OpenCvWpfTracking.ViewModels.Main
         private async Task<bool> MoveTiltForPanoramaAsync(
             double targetTilt,
             int positionSpeed,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool allowRetry = true)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -793,16 +838,39 @@ namespace OpenCvWpfTracking.ViewModels.Main
 
             if (!commandResult)
             {
+                if (allowRetry)
+                {
+                    ConsoleLogHelper.Warning(
+                        "EO PANORAMA / MOVE",
+                        "Tilt command send failed; retrying once / TARGET=" + targetTilt.ToString("F2"));
+                    await Task.Delay(250, cancellationToken);
+                    return await MoveTiltForPanoramaAsync(
+                        targetTilt,
+                        positionSpeed,
+                        cancellationToken,
+                        false);
+                }
+
                 return false;
+            }
+
+            double distance =
+                Math.Abs(
+                    _currentTilt - targetTilt);
+
+            if (distance <= PanoramaPositionTolerance)
+            {
+                EndPanoramaCameraMotion("TILT", targetTilt);
+                ConsoleLogHelper.State(
+                    "EO PANORAMA / MOVE",
+                    "Tilt target already within tolerance / TARGET=" + targetTilt.ToString("F2") +
+                    " / ACTUAL=" + _currentTilt.ToString("F2"));
+                return true;
             }
 
             int stableCount = 0;
             Stopwatch stopwatch =
                 Stopwatch.StartNew();
-
-            double distance =
-                Math.Abs(
-                    _currentTilt - targetTilt);
 
             int timeoutMs =
                 Math.Max(
@@ -837,7 +905,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         _currentTilt - targetTilt);
 
                 stableCount =
-                    tiltDelta <= PanoramaPanTolerance
+                    tiltDelta <= PanoramaPositionTolerance
                         ? stableCount + 1
                         : 0;
 
@@ -859,6 +927,20 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 "Tilt target timeout / TARGET=" + targetTilt.ToString("F2") +
                 " / ACTUAL=" + _currentTilt.ToString("F2") +
                 " / TIMEOUT_MS=" + timeoutMs);
+
+            if (allowRetry)
+            {
+                ConsoleLogHelper.Warning(
+                    "EO PANORAMA / MOVE",
+                    "Tilt target timeout; retrying once / TARGET=" + targetTilt.ToString("F2"));
+                await Task.Delay(250, cancellationToken);
+                return await MoveTiltForPanoramaAsync(
+                    targetTilt,
+                    positionSpeed,
+                    cancellationToken,
+                    false);
+            }
+
             return false;
         }
 

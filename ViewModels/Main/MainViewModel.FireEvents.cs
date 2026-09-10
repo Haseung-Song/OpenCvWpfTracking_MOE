@@ -425,6 +425,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     double score = VisionBBoxMatchRatio(track.Rectangle, safeCandidates[candidateIndex]);
                     if (score >= 0.20) matches.Add(Tuple.Create(score, track, candidateIndex));
                 }
+
             }
 
             HashSet<int> matchedCandidateIndexes = new HashSet<int>();

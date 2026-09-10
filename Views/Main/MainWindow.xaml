@@ -698,13 +698,21 @@
                     <ControlTemplate TargetType="ScrollBar">
                         <Grid Background="Transparent" Margin="2,0,0,0">
                             <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageUpCommand" Background="Transparent" Opacity="0"/></Track.DecreaseRepeatButton>
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Background="Transparent" Opacity="0"/>
+                                </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb Background="#87939B" MinHeight="28">
-                                        <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="{TemplateBinding Background}" BorderBrush="#AAB5BC" BorderThickness="1" CornerRadius="4"/></ControlTemplate></Thumb.Template>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="{TemplateBinding Background}" BorderBrush="#AAB5BC" BorderThickness="1" CornerRadius="4"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
                                     </Thumb>
                                 </Track.Thumb>
-                                <Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageDownCommand" Background="Transparent" Opacity="0"/></Track.IncreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Background="Transparent" Opacity="0"/>
+                                </Track.IncreaseRepeatButton>
                             </Track>
                         </Grid>
                     </ControlTemplate>
@@ -1534,7 +1542,8 @@
                                                                StringFormat={}LEVEL : {0} / 50}"
                                                        Foreground="#D0D7DE"
                                                        FontSize="12"
-                                                       FontWeight="Bold"/>
+                                                       FontWeight="Bold"
+                                                       Margin="10,0,4,0"/>
                                         </Grid>
 
                                         <Slider Grid.Row="1"
@@ -1549,7 +1558,8 @@
                                                         Mode=TwoWay,
                                                         UpdateSourceTrigger=PropertyChanged}"
                                                 IsEnabled="{Binding IsPanTiltSpeedControlEnabled}"
-                                                Height="30"/>
+                                                Height="30"
+                                                Margin="8,0,8,0"/>
                                     </Grid>
                                 </Border>
 
@@ -1901,7 +1911,7 @@
                                                                             AI Agent 연결 제어는 FIRE/SMOKE까지 함께 전환하므로
                                                                             개별 AI 설정 카드 밖의 독립된 연결 영역으로 구분한다.
                                                                         -->
-                                                                        <Border Margin="0,0,0,8"
+                                                                        <Border Margin="0,0,0,10"
                                                                                 Padding="8"
                                                                                 Background="#394148"
                                                                                 BorderBrush="#6F8996"
@@ -2047,7 +2057,7 @@
                                                                                        VerticalAlignment="Center"/>
                                                                                     <Slider Grid.Row="0"
                                                                                     Grid.Column="1"
-                                                                                    Margin="0,2"
+                                                                                    Margin="8,2"
                                                                                     Minimum="0"
                                                                                     Maximum="1"
                                                                                     TickFrequency="0.05"
@@ -2066,7 +2076,7 @@
                                                                                        VerticalAlignment="Center"/>
                                                                                     <Slider Grid.Row="1"
                                                                                     Grid.Column="1"
-                                                                                    Margin="0,2"
+                                                                                    Margin="8,2"
                                                                                     Minimum="0"
                                                                                     Maximum="1"
                                                                                     TickFrequency="0.05"
@@ -2085,7 +2095,7 @@
                                                                                        VerticalAlignment="Center"/>
                                                                                     <Slider Grid.Row="2"
                                                                                     Grid.Column="1"
-                                                                                    Margin="0,2"
+                                                                                    Margin="8,2"
                                                                                     Minimum="0"
                                                                                     Maximum="1"
                                                                                     TickFrequency="0.05"
@@ -2781,14 +2791,18 @@
 
                                                 <!-- [PTZF] Overlay / Pan / Tilt / Zoom / Focus 이동 제어 -->
                                                 <TabItem Header="PTZF">
-                                                    <!-- 2026-09-02: 스크롤 최상단/최하단에서 PTZF 제어와 안내 문구가 탭 경계에 잘리지 않도록 안전 여백을 확장한다. -->
+                                                    <!-- 2026-09-10 R22: 최하단 중복 여백을 제거하여 최대 스크롤에서도 ZOOM MOVE 제목이 잘리지 않게 한다. -->
                                                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                   HorizontalScrollBarVisibility="Disabled"
                                                                   CanContentScroll="False"
                                                                   PanningMode="VerticalOnly"
                                                                   IsVisibleChanged="OperationScrollViewer_IsVisibleChanged"
-                                                                  Padding="4,14,12,22">
-                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="2,2,4,8">
+                                                                  Margin="0,4,4,0"
+                                                                  Padding="6,8,8,0">
+                                                        <ScrollViewer.Resources>
+                                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource PresetScrollBarStyle}"/>
+                                                        </ScrollViewer.Resources>
+                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="2,0,2,0">
                                                             <!-- [EO / IR] 영상 Overlay 표시 제어 -->
                                                             <Border Margin="0,7,5,0"
                                                                     Background="#5F666D"
@@ -3123,7 +3137,7 @@
                                                                        FontSize="9.5"
                                                                        FontWeight="Bold"
                                                                        TextAlignment="Center"
-                                                                       Margin="0,4,5,6"/>
+                                                                       Margin="0,6,5,6"/>
 
                                                             <!-- [Absolute] 위치 이동 영역 -->
                                                             <Border Margin="0,0,0,7"
@@ -3139,7 +3153,7 @@
                                                                                HorizontalAlignment="Center"
                                                                                Foreground="White"
                                                                                FontWeight="Bold"
-                                                                               Margin="0,0,0,3"/>
+                                                                               Margin="0,0,0,7"/>
 
                                                                     <TextBlock Text="Pan Target  (-180° ~ 180°)"
                                                                                Foreground="White"
@@ -3312,7 +3326,7 @@
                                                             </Border>
 
                                                             <!-- [입력값 초기화] 영역 -->
-                                                            <Border Margin="0,3,0,5"
+                                                            <Border Margin="0,3,0,0"
                                                                     Background="#6A7178"
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1"
@@ -3352,7 +3366,9 @@
                                                                   IsVisibleChanged="OperationScrollViewer_IsVisibleChanged"
                                                                   Margin="0,5,4,6"
                                                                   Padding="4,8,8,12">
-                                                        <ScrollViewer.Resources><Style TargetType="ScrollBar" BasedOn="{StaticResource PresetScrollBarStyle}"/></ScrollViewer.Resources>
+                                                        <ScrollViewer.Resources>
+                                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource PresetScrollBarStyle}"/>
+                                                        </ScrollViewer.Resources>
                                                         <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="3,0,2,8">
 
                                                             <!-- 프리셋 추가 / 갱신 / 제거 -->
@@ -3678,15 +3694,18 @@
 
                                                 <TabItem Header="PRESET W&#x0a;(DEVICE)">
                                                     <!-- 2026-09-02: 스크롤 최상단/최하단에서 PRESET W 버튼과 안내 문구가 탭 경계에 잘리지 않도록 안전 여백을 확장한다. -->
+                                                    <!-- 2026-09-10: 중복된 하단 여백을 정리하고 PTZF와 같은 스크롤 끝 간격을 적용한다. -->
                                                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                                                   HorizontalScrollBarVisibility="Disabled"
                                                                   CanContentScroll="False"
                                                                   PanningMode="VerticalOnly"
                                                                   IsVisibleChanged="OperationScrollViewer_IsVisibleChanged"
-                                                                  Margin="0,5,4,6"
-                                                                  Padding="4,8,8,12">
-                                                        <ScrollViewer.Resources><Style TargetType="ScrollBar" BasedOn="{StaticResource PresetScrollBarStyle}"/></ScrollViewer.Resources>
-                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="3,0,2,8">
+                                                                  Margin="0,4,4,4"
+                                                                  Padding="6,8,8,8">
+                                                        <ScrollViewer.Resources>
+                                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource PresetScrollBarStyle}"/>
+                                                        </ScrollViewer.Resources>
+                                                        <StackPanel IsEnabled="{Binding IsOperationCommandEnabled}" Margin="2,0,2,0">
 
                                                             <!-- 프리셋 추가 / 갱신 / 제거 -->
                                                             <Border Margin="0,5,0,0"
@@ -3694,7 +3713,7 @@
                                                                     BorderBrush="#95A5B0"
                                                                     BorderThickness="1.5"
                                                                     CornerRadius="5"
-                                                                    Padding="5">
+                                                                    Padding="6">
 
                                                                 <StackPanel>
 

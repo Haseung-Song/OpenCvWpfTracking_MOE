@@ -558,6 +558,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         return;
                     }
+
                 }
 
                 _pendingAiUiUpdates[rtspIndex] = updateAction;
@@ -1244,7 +1245,9 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         {
                             model.Classes.Add(className);
                         }
+
                     }
+
                 }
 
                 models.Add(model);
@@ -1324,6 +1327,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         ? model.Classes[box.ClassIndex]
                         : null;
             }
+
         }
 
         /// <summary>
@@ -1358,6 +1362,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     _lastIrAiDisplayDetectionTime = receiveTime;
                 }
+
             }
 
             Dictionary<string, AiDetectionBox> merged =
@@ -1373,6 +1378,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 {
                     merged[key] = previousBox;
                 }
+
             }
             targetBoxes.Clear();
             int displayOrder = 1;

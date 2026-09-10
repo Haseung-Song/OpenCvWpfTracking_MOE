@@ -2383,6 +2383,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                     {
                         failedCount++;
                     }
+
                 }
                 catch (Exception ex)
                 {
@@ -2392,6 +2393,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                         "Clear preset exception / NUMBER=" + preset.Number,
                         ex);
                 }
+
             }
 
             SelectedPresetPoint =

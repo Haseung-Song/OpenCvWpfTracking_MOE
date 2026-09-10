@@ -64,6 +64,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
             {
                 _isLoadingRtspCommunicationSettings = false;
             }
+
         }
 
         private void SaveRtspCommunicationSettings()
@@ -93,6 +94,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                 ConsoleLogHelper.Error(
                     "RTSP CONFIG", "Save failed; current runtime values retained", ex);
             }
+
         }
 
         private static RtspSourceOption ResolveRtspSource(
@@ -119,5 +121,7 @@ namespace OpenCvWpfTracking.ViewModels.Main
                    // 실제 직접 입력은 위 byName 분기에서 그대로 보존된다.
                    ?? options.First(option => !option.IsDirectInput);
         }
+
     }
+
 }
